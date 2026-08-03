@@ -3,7 +3,6 @@ import '../../models/room_model.dart';
 import '../status/status_badge.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 
 class RoomCard extends StatelessWidget {
   final RoomModel room;
@@ -17,62 +16,144 @@ class RoomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
+    final statusColor = _getStatusColor(room.status);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    room.roomNumber,
-                    style: AppTypography.titleMedium.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      room.roomTypeName ?? 'Standard Room',
-                      style: AppTypography.titleMedium,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Floor ${room.floor} • ${room.status.replaceAll('_', ' ').toUpperCase()}',
-                      style: AppTypography.bodySmall,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${Formatters.formatCurrency(room.basePrice)} / night',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+                    // Room Number Badge
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: statusColor.withAlpha(25),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: statusColor.withAlpha(60)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          room.roomNumber,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: statusColor,
+                          ),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 14),
+
+                    // Room Type & Floor Details
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            room.roomTypeName ?? 'Standard Room',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Floor ${room.floor}${room.maxOccupancy != null ? " • Max ${room.maxOccupancy} Guests" : ""}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${Formatters.formatCurrency(room.basePrice)} / night',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Status Badge
+                    StatusBadge(status: room.status),
                   ],
                 ),
-              ),
-              StatusBadge(status: room.status),
-            ],
+
+                // Active Guest or Housekeeping Preview Tags
+                if (room.currentGuestName != null || room.assignedHousekeeper != null) ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      if (room.currentGuestName != null) ...[
+                        const Icon(Icons.person_outline, size: 14, color: AppColors.primary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Guest: ${room.currentGuestName}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                      if (room.assignedHousekeeper != null) ...[
+                        const Icon(Icons.cleaning_services_outlined, size: 14, color: Color(0xFFF59E0B)),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Cleaner: ${room.assignedHousekeeper}',
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'available':
+        return const Color(0xFF10B981); // Emerald
+      case 'occupied':
+        return const Color(0xFF8B5CF6); // Purple
+      case 'dirty':
+        return const Color(0xFFF59E0B); // Amber
+      case 'maintenance':
+        return const Color(0xFFEF4444); // Red
+      case 'out_of_order':
+        return const Color(0xFF64748B); // Slate
+      default:
+        return AppColors.primary;
+    }
   }
 }

@@ -8,7 +8,7 @@ class RoomsRepository {
   RoomsRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   Future<List<RoomModel>> getRooms({String? status, int? floor}) async {
-    final Map<String, dynamic> query = {};
+    final Map<String, dynamic> query = {'limit': 100};
     if (status != null && status.isNotEmpty) query['status'] = status;
     if (floor != null) query['floor'] = floor;
 
@@ -17,8 +17,14 @@ class RoomsRepository {
       queryParameters: query,
     );
 
-    final list = (response['data'] as List?) ?? [];
-    return list.map((json) => RoomModel.fromJson(json as Map<String, dynamic>)).toList();
+    List rawList = [];
+    if (response is Map<String, dynamic> && response['data'] is List) {
+      rawList = response['data'] as List;
+    } else if (response is List) {
+      rawList = response;
+    }
+
+    return rawList.map((json) => RoomModel.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   Future<RoomModel> updateRoomStatus(int roomId, String status) async {
