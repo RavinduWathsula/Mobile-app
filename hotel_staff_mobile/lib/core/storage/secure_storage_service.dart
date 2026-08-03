@@ -41,6 +41,11 @@ class SecureStorageService {
     }
   }
 
+  Future<bool> hasValidToken() async {
+    final token = await getAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
   Future<void> clearAll() async {
     await _storage.deleteAll();
   }

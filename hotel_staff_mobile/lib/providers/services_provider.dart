@@ -7,6 +7,7 @@ import '../repositories/bookings_repository.dart';
 import '../repositories/housekeeping_repository.dart';
 import '../repositories/restaurant_repository.dart';
 import '../repositories/reports_repository.dart';
+import 'auth_provider.dart';
 
 final secureStorageProvider = Provider<SecureStorageService>((ref) {
   return SecureStorageService();
@@ -14,7 +15,12 @@ final secureStorageProvider = Provider<SecureStorageService>((ref) {
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final storage = ref.watch(secureStorageProvider);
-  return ApiClient(storageService: storage);
+  return ApiClient(
+    storageService: storage,
+    onSessionExpired: () {
+      ref.read(authProvider.notifier).handleSessionExpired();
+    },
+  );
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

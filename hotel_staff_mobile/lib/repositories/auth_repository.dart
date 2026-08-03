@@ -53,4 +53,8 @@ class AuthRepository {
     }
     return null;
   }
+
+  Future<bool> hasStoredToken() async {
+    return await _storageService.hasValidToken();
+  }
 }

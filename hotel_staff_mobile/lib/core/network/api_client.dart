@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import '../constants/api_endpoints.dart';
 import '../storage/secure_storage_service.dart';
@@ -7,8 +8,13 @@ import 'auth_interceptor.dart';
 class ApiClient {
   late final Dio dio;
   final SecureStorageService storageService;
+  final VoidCallback? onSessionExpired;
 
-  ApiClient({required this.storageService, String? baseUrl}) {
+  ApiClient({
+    required this.storageService,
+    String? baseUrl,
+    this.onSessionExpired,
+  }) {
     final base = baseUrl ?? ApiEndpoints.defaultBaseUrl;
 
     dio = Dio(
@@ -34,6 +40,7 @@ class ApiClient {
       AuthInterceptor(
         storageService: storageService,
         refreshDio: refreshDio,
+        onSessionExpired: onSessionExpired,
       ),
     );
   }

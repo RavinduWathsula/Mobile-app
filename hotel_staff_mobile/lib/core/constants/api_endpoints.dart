@@ -2,12 +2,12 @@ import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
   // Base URLs
-  // 10.0.2.2 for Android Emulator, localhost for Chrome/Web
+  // 10.0.2.2 for Android Emulator, localhost for Windows Desktop / Web / iOS
   static String get defaultBaseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:3010/api';
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:3010/api';
     }
-    return 'http://10.0.2.2:3010/api';
+    return 'http://localhost:3010/api';
   }
   
   // Auth
