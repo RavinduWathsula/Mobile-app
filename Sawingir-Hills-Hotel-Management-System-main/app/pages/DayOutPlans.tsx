@@ -397,11 +397,10 @@ export function DayOutPlans() {
               <button
                 key={tab.value}
                 onClick={() => setActiveTab(tab.value)}
-                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-all duration-200 ${
-                  isActive
+                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-all duration-200 ${isActive
                     ? "border-[#2B0A57] text-[#2B0A57]"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -635,11 +634,11 @@ export function DayOutPlans() {
                           LKR{" "}
                           {(
                             parseInt(reservationForm.adults || "0") *
-                              plans.find((p) => p.id === parseInt(reservationForm.planId))
-                                ?.adultPrice! +
+                            plans.find((p) => p.id === parseInt(reservationForm.planId))
+                              ?.adultPrice! +
                             parseInt(reservationForm.children || "0") *
-                              plans.find((p) => p.id === parseInt(reservationForm.planId))
-                                ?.childPrice!
+                            plans.find((p) => p.id === parseInt(reservationForm.planId))
+                              ?.childPrice!
                           ).toLocaleString()}
                         </span>
                       </div>

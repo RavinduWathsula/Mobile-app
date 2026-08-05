@@ -25,6 +25,8 @@ class RoomDistributionBar extends StatelessWidget {
     final dirtyFlex = (dirty / validTotal * 100).round();
     final maintenanceFlex = (maintenance / validTotal * 100).round();
 
+    final bool hasSegments = occupiedFlex > 0 || availableFlex > 0 || dirtyFlex > 0 || maintenanceFlex > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,6 +39,10 @@ class RoomDistributionBar extends StatelessWidget {
             ),
             child: Row(
               children: [
+                if (!hasSegments)
+                  Expanded(
+                    child: Container(color: const Color(0xFF10B981)),
+                  ),
                 if (occupiedFlex > 0)
                   Expanded(
                     flex: occupiedFlex,
