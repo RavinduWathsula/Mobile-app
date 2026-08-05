@@ -1,6 +1,7 @@
 import '../core/network/api_client.dart';
 import '../core/constants/api_endpoints.dart';
 import '../models/booking_model.dart';
+import '../models/booking_request_models.dart';
 
 class BookingsRepository {
   final ApiClient _apiClient;
@@ -22,8 +23,8 @@ class BookingsRepository {
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
       final mock = [
-        BookingModel(id: 1, bookingRef: 'BK-2026-001', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite'),
-        BookingModel(id: 2, bookingRef: 'BK-2026-002', guestId: 2, roomId: 102, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 1, children: 1, mealPlan: 'half_board', totalAmount: 520.0, advancePaid: 200.0, balanceDue: 320.0, status: 'checked_in', guestFirstName: 'Sarah', guestLastName: 'Smith', roomNumber: '102', roomTypeName: 'Deluxe Suite'),
+        BookingModel(id: 1, bookingRef: 'BK-2026-001', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite'),
+        BookingModel(id: 2, bookingRef: 'BK-2026-002', guestId: 2, roomId: 102, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 1, children: 1, mealPlan: 'half_board', totalAmount: 520.0, advancePaid: 200.0, balanceDue: 320.0, status: 'checked_in', source: 'direct', guestFirstName: 'Sarah', guestLastName: 'Smith', roomNumber: '102', roomTypeName: 'Deluxe Suite'),
       ];
       if (status != null && status.isNotEmpty) {
         return mock.where((b) => b.status.toLowerCase() == status.toLowerCase()).toList();
@@ -37,8 +38,24 @@ class BookingsRepository {
       final response = await _apiClient.get('${ApiEndpoints.bookings}/$id');
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
+      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
     }
+  }
+
+  Future<BookingModel> createBooking(CreateBookingRequest data) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.bookings,
+      data: data.toJson(),
+    );
+    return BookingModel.fromJson(response as Map<String, dynamic>);
+  }
+
+  Future<BookingModel> recordPayment(int id, PaymentRequest data) async {
+    final response = await _apiClient.patch(
+      '${ApiEndpoints.bookings}/$id/payment',
+      data: data.toJson(),
+    );
+    return BookingModel.fromJson(response as Map<String, dynamic>);
   }
 
   Future<List<BookingModel>> getTodayArrivals() async {
@@ -48,7 +65,7 @@ class BookingsRepository {
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
       return [
-        BookingModel(id: 3, bookingRef: 'BK-2026-003', guestId: 3, roomId: 201, roomTypeId: 2, checkIn: '2026-08-05', checkOut: '2026-08-09', nights: 4, adults: 2, children: 1, mealPlan: 'full_board', totalAmount: 900.0, advancePaid: 300.0, balanceDue: 600.0, status: 'confirmed', guestFirstName: 'Michael', guestLastName: 'Brown', roomNumber: '201', roomTypeName: 'Executive Suite'),
+        BookingModel(id: 3, bookingRef: 'BK-2026-003', guestId: 3, roomId: 201, roomTypeId: 2, checkIn: '2026-08-05', checkOut: '2026-08-09', nights: 4, adults: 2, children: 1, mealPlan: 'full_board', totalAmount: 900.0, advancePaid: 300.0, balanceDue: 600.0, status: 'confirmed', source: 'direct', guestFirstName: 'Michael', guestLastName: 'Brown', roomNumber: '201', roomTypeName: 'Executive Suite'),
       ];
     }
   }
@@ -60,7 +77,7 @@ class BookingsRepository {
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
       return [
-        BookingModel(id: 4, bookingRef: 'BK-2026-004', guestId: 4, roomId: 103, roomTypeId: 1, checkIn: '2026-08-02', checkOut: '2026-08-05', nights: 3, adults: 1, children: 0, mealPlan: 'room_only', totalAmount: 350.0, advancePaid: 350.0, balanceDue: 0.0, status: 'checked_in', guestFirstName: 'Emma', guestLastName: 'Wilson', roomNumber: '103', roomTypeName: 'Deluxe Suite'),
+        BookingModel(id: 4, bookingRef: 'BK-2026-004', guestId: 4, roomId: 103, roomTypeId: 1, checkIn: '2026-08-02', checkOut: '2026-08-05', nights: 3, adults: 1, children: 0, mealPlan: 'room_only', totalAmount: 350.0, advancePaid: 350.0, balanceDue: 0.0, status: 'checked_in', source: 'direct', guestFirstName: 'Emma', guestLastName: 'Wilson', roomNumber: '103', roomTypeName: 'Deluxe Suite'),
       ];
     }
   }
@@ -82,7 +99,7 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: roomId ?? 101, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: status, guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
+      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: roomId ?? 101, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: status, source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
     }
   }
 }

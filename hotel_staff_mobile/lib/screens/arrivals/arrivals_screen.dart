@@ -6,46 +6,113 @@ import '../../widgets/cards/booking_card.dart';
 import '../../widgets/loading/loading_indicator.dart';
 import '../../widgets/empty_states/empty_state_view.dart';
 import '../bookings/booking_detail_screen.dart';
+import '../../models/booking_model.dart';
+
+final arrivalsSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 
 class ArrivalsScreen extends ConsumerWidget {
   const ArrivalsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final arrivalsAsync = ref.watch(todayArrivalsProvider);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Today's Arrivals"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.refresh(todayArrivalsProvider),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text("Arrivals"),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: "Today's Arrivals"),
+              Tab(text: "Upcoming"),
+            ],
           ),
-        ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                ref.refresh(todayArrivalsProvider);
+                ref.refresh(upcomingArrivalsProvider);
+              },
+            ),
+          ],
+        ),
+        drawer: const DrawerNavigation(),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Search guest name or ref...',
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (val) {
+                  ref.read(arrivalsSearchQueryProvider.notifier).state = val;
+                },
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _ArrivalsListView(provider: todayArrivalsProvider),
+                  _ArrivalsListView(provider: upcomingArrivalsProvider),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      drawer: const DrawerNavigation(),
-      body: arrivalsAsync.when(
-        loading: () => const LoadingIndicator(message: "Loading today's arrivals..."),
-        error: (err, stack) => EmptyStateView(
-          title: 'Error loading arrivals',
-          description: err.toString(),
-          onRetry: () => ref.refresh(todayArrivalsProvider),
+    );
+  }
+}
+
+class _ArrivalsListView extends ConsumerWidget {
+  final AutoDisposeFutureProvider<List<BookingModel>> provider;
+
+  const _ArrivalsListView({required this.provider});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final arrivalsAsync = ref.watch(provider);
+    final searchQuery = ref.watch(arrivalsSearchQueryProvider).toLowerCase();
+
+    return RefreshIndicator(
+      onRefresh: () async => ref.refresh(provider.future),
+      child: arrivalsAsync.when(
+        loading: () => const LoadingIndicator(message: "Loading arrivals..."),
+        error: (err, stack) => ListView(
+          children: [
+            EmptyStateView(
+              title: 'Error loading arrivals',
+              description: err.toString(),
+              onRetry: () => ref.refresh(provider),
+            ),
+          ],
         ),
         data: (arrivals) {
-          if (arrivals.isEmpty) {
-            return const EmptyStateView(
-              icon: Icons.flight_land,
-              title: 'No Expected Arrivals',
-              description: 'There are no pending arrivals scheduled for today.',
+          final filteredList = arrivals.where((b) {
+            final matchesRef = b.bookingRef.toLowerCase().contains(searchQuery);
+            final matchesName = b.guestFullName.toLowerCase().contains(searchQuery);
+            return matchesRef || matchesName;
+          }).toList();
+
+          if (filteredList.isEmpty) {
+            return ListView(
+              children: const [
+                EmptyStateView(
+                  icon: Icons.flight_land,
+                  title: 'No Arrivals Found',
+                  description: 'There are no pending arrivals matching your criteria.',
+                ),
+              ],
             );
           }
 
           return ListView.builder(
             padding: const EdgeInsets.all(12),
-            itemCount: arrivals.length,
+            itemCount: filteredList.length,
             itemBuilder: (context, index) {
-              final booking = arrivals[index];
+              final booking = filteredList[index];
               return BookingCard(
                 booking: booking,
                 onTap: () {

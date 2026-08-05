@@ -14,9 +14,15 @@ class BookingModel {
   final double advancePaid;
   final double balanceDue;
   final String status;
+  final String source;
+  final String? specialRequests;
+  final String? notes;
   final String? guestFirstName;
   final String? guestLastName;
   final String? guestPhone;
+  final String? guestEmail;
+  final String? guestNationality;
+  final String? guestIdNumber;
   final String? roomNumber;
   final String? roomTypeName;
 
@@ -36,9 +42,15 @@ class BookingModel {
     required this.advancePaid,
     required this.balanceDue,
     required this.status,
+    required this.source,
+    this.specialRequests,
+    this.notes,
     this.guestFirstName,
     this.guestLastName,
     this.guestPhone,
+    this.guestEmail,
+    this.guestNationality,
+    this.guestIdNumber,
     this.roomNumber,
     this.roomTypeName,
   });
@@ -62,9 +74,15 @@ class BookingModel {
       advancePaid: double.tryParse(json['advancePaid']?.toString() ?? '0') ?? 0.0,
       balanceDue: double.tryParse(json['balanceDue']?.toString() ?? '0') ?? 0.0,
       status: json['status'] as String? ?? 'confirmed',
+      source: json['source'] as String? ?? 'direct',
+      specialRequests: json['specialRequests'] as String?,
+      notes: json['notes'] as String?,
       guestFirstName: json['guest']?['firstName'] as String?,
       guestLastName: json['guest']?['lastName'] as String?,
       guestPhone: json['guest']?['phone'] as String?,
+      guestEmail: json['guest']?['email'] as String?,
+      guestNationality: json['guest']?['nationality'] as String?,
+      guestIdNumber: json['guest']?['idNumber'] as String?,
       roomNumber: json['room']?['roomNumber'] as String?,
       roomTypeName: json['roomType']?['name'] as String?,
     );
