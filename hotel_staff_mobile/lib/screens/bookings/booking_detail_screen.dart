@@ -85,7 +85,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(8),
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 child: Row(
                   children: [
                     const Icon(Icons.warning_amber_rounded, color: Colors.red),
@@ -249,7 +249,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.king_bed),
-              title: Text('${booking.roomTypeName ?? 'Unassigned Room Type'}'),
+              title: Text(booking.roomTypeName ?? 'Unassigned Room Type'),
               subtitle: Text('Room Number: ${booking.roomNumber ?? 'Not Assigned'}'),
             ),
             ListTile(

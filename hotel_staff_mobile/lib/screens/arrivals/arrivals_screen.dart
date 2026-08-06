@@ -30,8 +30,8 @@ class ArrivalsScreen extends ConsumerWidget {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
-                ref.refresh(todayArrivalsProvider);
-                ref.refresh(upcomingArrivalsProvider);
+                ref.invalidate(todayArrivalsProvider);
+                ref.invalidate(upcomingArrivalsProvider);
               },
             ),
           ],

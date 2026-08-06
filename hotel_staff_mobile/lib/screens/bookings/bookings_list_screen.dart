@@ -15,6 +15,7 @@ class BookingsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final bookingsAsync = ref.watch(bookingsListProvider);
     final currentStatus = ref.watch(bookingFilterStatusProvider);
+    final theme = Theme.of(context);
 
     final statuses = [
       {'label': 'All', 'value': null},
@@ -25,113 +26,145 @@ class BookingsListScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bookings & Reservations'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.refresh(bookingsListProvider),
-          ),
-        ],
-      ),
       drawer: const DrawerNavigation(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateBookingScreen()),
+          // Use rootNavigator to ensure it pushes above any bottom navigation bars
+          Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => const CreateBookingScreen(),
+            ),
           );
         },
         icon: const Icon(Icons.add),
         label: const Text('New Booking'),
+        elevation: 4,
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              decoration: const InputDecoration(
-                hintText: 'Search by booking ref or guest name...',
-                prefixIcon: Icon(Icons.search),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.refresh(bookingsListProvider.future),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 120.0,
+              floating: true,
+              pinned: true,
+              elevation: 0,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 48, bottom: 16), // Adjusted for drawer icon
+                title: Text(
+                  'Bookings',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
-              onChanged: (val) {
-                ref.read(bookingSearchQueryProvider.notifier).state = val;
-              },
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => ref.refresh(bookingsListProvider),
+                ),
+              ],
             ),
-          ),
-          SizedBox(
-            height: 50,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: statuses.length,
-              itemBuilder: (context, index) {
-                final status = statuses[index];
-                final isSelected = currentStatus == status['value'];
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: Text(status['label'] as String),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      ref.read(bookingFilterStatusProvider.notifier).state = 
-                        selected ? status['value'] as String? : null;
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search by booking ref or guest name...',
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  ),
+                  onChanged: (val) {
+                    ref.read(bookingSearchQueryProvider.notifier).state = val;
+                  },
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 40,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: statuses.length,
+                  itemBuilder: (context, index) {
+                    final status = statuses[index];
+                    final isSelected = currentStatus == status['value'];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(status['label'] as String),
+                        selected: isSelected,
+                        showCheckmark: false,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        onSelected: (selected) {
+                          ref.read(bookingFilterStatusProvider.notifier).state =
+                              selected ? status['value'] : null;
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 16)),
+            bookingsAsync.when(
+              loading: () => const SliverFillRemaining(
+                child: LoadingIndicator(message: 'Fetching reservations...'),
+              ),
+              error: (err, stack) => SliverFillRemaining(
+                child: EmptyStateView(
+                  title: 'Error loading bookings',
+                  description: err.toString(),
+                  onRetry: () => ref.refresh(bookingsListProvider),
+                ),
+              ),
+              data: (bookings) {
+                if (bookings.isEmpty) {
+                  return const SliverFillRemaining(
+                    child: EmptyStateView(
+                      icon: Icons.bookmark_border,
+                      title: 'No Bookings Found',
+                      description: 'No active or upcoming reservations match your query.',
+                    ),
+                  );
+                }
+
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final booking = bookings[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        child: BookingCard(
+                          booking: booking,
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (_) => BookingDetailScreen(bookingId: booking.id),
+                              ),
+                            );
+                          },
+                        ),
+                      );
                     },
+                    childCount: bookings.length,
                   ),
                 );
               },
             ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async => ref.refresh(bookingsListProvider.future),
-              child: bookingsAsync.when(
-                loading: () => const LoadingIndicator(message: 'Fetching reservations...'),
-                error: (err, stack) => ListView(
-                  children: [
-                    EmptyStateView(
-                      title: 'Error loading bookings',
-                      description: err.toString(),
-                      onRetry: () => ref.refresh(bookingsListProvider),
-                    ),
-                  ],
-                ),
-                data: (bookings) {
-                  if (bookings.isEmpty) {
-                    return ListView(
-                      children: const [
-                        EmptyStateView(
-                          icon: Icons.bookmark_border,
-                          title: 'No Bookings Found',
-                          description: 'No active or upcoming reservations match your query.',
-                        ),
-                      ],
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: bookings.length,
-                    itemBuilder: (context, index) {
-                      final booking = bookings[index];
-                      return BookingCard(
-                        booking: booking,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => BookingDetailScreen(bookingId: booking.id),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+            const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+          ],
+        ),
       ),
     );
   }
