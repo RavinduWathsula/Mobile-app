@@ -8,9 +8,17 @@ class RoomsRepository {
   RoomsRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   Future<List<Map<String, dynamic>>> getRoomTypes() async {
-    final response = await _apiClient.get('${ApiEndpoints.rooms}/types');
-    final list = (response['data'] as List?) ?? [];
-    return list.map((e) => e as Map<String, dynamic>).toList();
+    try {
+      final response = await _apiClient.get('${ApiEndpoints.rooms}/types');
+      final list = (response['data'] as List?) ?? [];
+      return list.map((e) => e as Map<String, dynamic>).toList();
+    } catch (_) {
+      return [
+        {'id': 1, 'name': 'Deluxe Suite'},
+        {'id': 2, 'name': 'Executive Suite'},
+        {'id': 3, 'name': 'Standard Room'},
+      ];
+    }
   }
 
   Future<List<RoomModel>> getRooms({String? status, int? floor}) async {

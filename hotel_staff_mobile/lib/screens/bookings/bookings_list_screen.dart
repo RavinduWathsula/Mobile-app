@@ -74,7 +74,7 @@ class BookingsListScreen extends ConsumerWidget {
                     hintText: 'Search by booking ref or guest name...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,

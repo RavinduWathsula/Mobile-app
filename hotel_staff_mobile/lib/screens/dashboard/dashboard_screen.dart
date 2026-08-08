@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../widgets/dashboard/occupancy_gauge_painter.dart';
 import '../../widgets/dashboard/room_distribution_bar.dart';
 import '../../widgets/dashboard/shift_announcement_card.dart';
+import '../../widgets/dashboard/notification_badge.dart';
 import '../../widgets/loading/dashboard_skeleton.dart';
 import '../../widgets/empty_states/empty_state_view.dart';
 import '../../core/utils/formatters.dart';
@@ -123,39 +124,8 @@ class DashboardScreen extends ConsumerWidget {
                       Row(
                         children: [
                           // Notifications Button with Pulse Indicator
-                          Stack(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.notifications_outlined, color: AppColors.textPrimary),
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('No unread shift notifications'),
-                                      duration: Duration(seconds: 2),
-                                    ),
-                                  );
-                                },
-                              ),
-                              Positioned(
-                                right: 10,
-                                top: 10,
-                                child: Container(
-                                  width: 9,
-                                  height: 9,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.red.withAlpha(180),
-                                        blurRadius: 6,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
+                          const NotificationBadge(
+                            iconColor: AppColors.textPrimary,
                           ),
                           const SizedBox(width: 4),
 
