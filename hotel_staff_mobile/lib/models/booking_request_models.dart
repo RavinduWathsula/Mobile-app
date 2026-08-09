@@ -1,5 +1,5 @@
 class GuestRequest {
-  final String firstName;
+  final String firstName ;
   final String lastName;
   final String? email;
   final String? phone;
