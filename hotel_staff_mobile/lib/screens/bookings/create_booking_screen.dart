@@ -64,6 +64,13 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       return;
     }
 
+    if (_checkOut!.difference(_checkIn!).inDays <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Check-out date must be after check-in date')),
+      );
+      return;
+    }
+
     if (_selectedRoomTypeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select a room type')),
@@ -145,6 +152,40 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     }
   }
 
+  double _calculateTotal(List<Map<String, dynamic>> roomTypes) {
+    if (_checkIn == null || _checkOut == null || _selectedRoomTypeId == null) return 0;
+    final nights = _checkOut!.difference(_checkIn!).inDays;
+    if (nights <= 0) return 0;
+    
+    final roomType = roomTypes.firstWhere((r) => r['id'] == _selectedRoomTypeId, orElse: () => {});
+    if (roomType.isEmpty) return 0;
+    
+    final basePrice = (roomType['basePrice'] as num?)?.toDouble() ?? 0.0;
+    
+    final name = (roomType['name'] as String).toLowerCase();
+    final tier = name.contains('single') ? 1 : name.contains('double') ? 2 : 3;
+    
+    double mealSurcharge = 0;
+    switch (_selectedMealPlan) {
+      case 'bnb': mealSurcharge = 2000.0 * tier; break;
+      case 'half-board': mealSurcharge = 4000.0 * tier; break;
+      case 'full-board': mealSurcharge = 6000.0 * tier; break;
+      case 'room-only':
+      default:
+        mealSurcharge = 0;
+    }
+    
+    if (name.contains('honeymoon') || name.contains('family')) {
+      mealSurcharge = 0;
+    }
+    
+    final roomRate = basePrice + mealSurcharge;
+    final subtotal = roomRate * nights;
+    final taxAmount = subtotal * 0.12;
+    final serviceCharge = subtotal * 0.1;
+    return subtotal + taxAmount + serviceCharge;
+  }
+
   @override
   Widget build(BuildContext context) {
     final roomTypesAsync = ref.watch(roomTypesProvider);
@@ -160,7 +201,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
               child: Stepper(
                 currentStep: _currentStep,
                 onStepContinue: () {
-                  if (_currentStep < 5) {
+                  if (_currentStep < 6) {
                     setState(() => _currentStep += 1);
                   } else {
                     _submitForm();
@@ -184,7 +225,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                             backgroundColor: const Color(0xFF2B0A57),
                             foregroundColor: Colors.white,
                           ),
-                          child: Text(_currentStep == 5 ? 'Confirm Booking' : 'Continue'),
+                          child: Text(_currentStep == 6 ? 'Confirm Booking' : 'Continue'),
                         ),
                         const SizedBox(width: 12),
                         if (_currentStep > 0)
@@ -202,6 +243,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     isActive: _currentStep >= 0,
                     state: _currentStep > 0 ? StepState.complete : StepState.indexed,
                     content: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
                           controller: _firstNameCtrl,
@@ -234,6 +276,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     isActive: _currentStep >= 1,
                     state: _currentStep > 1 ? StepState.complete : StepState.indexed,
                     content: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         OutlinedButton.icon(
@@ -299,6 +342,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       children: [
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Adults'),
@@ -314,6 +358,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         ),
                         Expanded(
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text('Children'),
@@ -331,10 +376,37 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                     ),
                   ),
                   Step(
-                    title: const Text('Payment (Optional)'),
+                    title: const Text('Rate Summary'),
                     isActive: _currentStep >= 5,
+                    state: _currentStep > 5 ? StepState.complete : StepState.indexed,
+                    content: roomTypesAsync.when(
+                      loading: () => const CircularProgressIndicator(),
+                      error: (err, stack) => const Text('Error loading summary'),
+                      data: (types) {
+                        final nights = _checkIn != null && _checkOut != null ? _checkOut!.difference(_checkIn!).inDays : 0;
+                        final total = _calculateTotal(types);
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              title: const Text('Nights'),
+                              trailing: Text('$nights'),
+                            ),
+                            ListTile(
+                              title: const Text('Total Estimated Amount'),
+                              trailing: Text('Rs. ${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  Step(
+                    title: const Text('Payment (Optional)'),
+                    isActive: _currentStep >= 6,
                     state: StepState.indexed,
                     content: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         TextFormField(
                           controller: _advanceAmountCtrl,

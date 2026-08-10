@@ -14,9 +14,9 @@ class RoomsRepository {
       return list.map((e) => e as Map<String, dynamic>).toList();
     } catch (_) {
       return [
-        {'id': 1, 'name': 'Deluxe Suite'},
-        {'id': 2, 'name': 'Executive Suite'},
-        {'id': 3, 'name': 'Standard Room'},
+        {'id': 1, 'name': 'Deluxe Suite', 'basePrice': 15000.0, 'availableRooms': 5},
+        {'id': 2, 'name': 'Executive Suite', 'basePrice': 25000.0, 'availableRooms': 2},
+        {'id': 3, 'name': 'Standard Room', 'basePrice': 10000.0, 'availableRooms': 10},
       ];
     }
   }
