@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/housekeeping_provider.dart';
 import '../../providers/services_provider.dart';
+import '../../providers/rooms_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../widgets/common/drawer_navigation.dart';
 import '../../widgets/cards/task_card.dart';
 import '../../widgets/loading/loading_indicator.dart';
@@ -16,6 +18,8 @@ class HousekeepingScreen extends ConsumerWidget {
       final repo = ref.read(housekeepingRepositoryProvider);
       await repo.updateTaskStatus(taskId, status);
       ref.invalidate(housekeepingTasksProvider);
+      ref.invalidate(roomsListProvider);
+      ref.invalidate(dashboardStatsProvider);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

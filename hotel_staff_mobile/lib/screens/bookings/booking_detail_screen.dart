@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/services_provider.dart';
+import '../../providers/rooms_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../models/booking_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/loading/loading_indicator.dart';
@@ -33,6 +35,8 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       ref.invalidate(todayArrivalsProvider);
       ref.invalidate(upcomingArrivalsProvider);
       ref.invalidate(todayCheckoutsProvider);
+      ref.invalidate(roomsListProvider);
+      ref.invalidate(dashboardStatsProvider);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

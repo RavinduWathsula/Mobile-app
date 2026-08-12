@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/restaurant_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/rooms_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../widgets/common/drawer_navigation.dart';
 import '../../widgets/status/status_badge.dart';
 import '../../widgets/loading/loading_indicator.dart';
@@ -50,6 +51,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
         content: Text('${item.name} added to cart'),
         duration: const Duration(seconds: 1),
         behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.success,
       ),
     );
   }
@@ -69,19 +71,27 @@ class _POSScreenState extends ConsumerState<POSScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Special Instructions'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'E.g. No onions, extra spicy...',
-            border: OutlineInputBorder(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey.shade50,
           ),
           maxLines: 3,
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Save'),
+            child: const Text('Save Note'),
           ),
         ],
       ),
@@ -98,15 +108,15 @@ class _POSScreenState extends ConsumerState<POSScreen> {
 
   Future<void> _submitOrder() async {
     if (_cart.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cart is empty')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cart is empty'), backgroundColor: Colors.orange));
       return;
     }
-    if (_selectedTableCode == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a table')));
+    if (_selectedTableCode == null && _paymentMethod != 'room_charge') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a table'), backgroundColor: Colors.orange));
       return;
     }
     if (_paymentMethod == 'room_charge' && _selectedRoomId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a room for charge')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a room for charge'), backgroundColor: Colors.orange));
       return;
     }
 
@@ -130,7 +140,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Order submitted successfully!'),
+          content: Text('Order submitted to kitchen successfully!'),
           backgroundColor: AppColors.success,
         ));
         Navigator.pop(context); // Close bottom sheet
@@ -142,6 +152,8 @@ class _POSScreenState extends ConsumerState<POSScreen> {
         });
         ref.invalidate(restaurantTablesProvider);
         ref.invalidate(restaurantOrdersProvider);
+        ref.invalidate(activeOrdersCountProvider);
+        ref.invalidate(dashboardStatsProvider);
       }
     } catch (e) {
       if (mounted) {
@@ -162,7 +174,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -171,55 +183,109 @@ class _POSScreenState extends ConsumerState<POSScreen> {
             return Padding(
               padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
                 height: MediaQuery.of(context).size.height * 0.9,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('Order Cart', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                    const Divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Order Cart', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+                        IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+                      ],
+                    ),
+                    const Divider(height: 24),
                     if (_cart.isEmpty)
-                      const Expanded(child: Center(child: Text('Your cart is empty')))
+                      Expanded(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey.shade300),
+                              const SizedBox(height: 16),
+                              Text('Your cart is empty', style: TextStyle(fontSize: 18, color: Colors.grey.shade500)),
+                            ],
+                          ),
+                        ),
+                      )
                     else
                       Expanded(
                         child: ListView.builder(
                           itemCount: _cart.length,
                           itemBuilder: (context, index) {
                             final item = _cart[index];
-                            return Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(item.menuItem.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          Text(Formatters.formatCurrency(item.totalPrice)),
-                                          if (item.specialInstructions != null)
-                                            Text(
-                                              'Notes: ${item.specialInstructions}', 
-                                              style: const TextStyle(color: Colors.orange, fontSize: 12),
-                                            ),
-                                          TextButton.icon(
-                                            onPressed: () async {
-                                              await _addNoteDialog(index);
-                                              setModalState((){});
-                                            },
-                                            icon: const Icon(Icons.edit_note, size: 16),
-                                            label: const Text('Add Note', style: TextStyle(fontSize: 12)),
-                                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 30)),
-                                          )
-                                        ],
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade200),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                              ),
+                              child: Row(
+                                children: [
+                                  // Thumbnail
+                                  if (item.menuItem.imageUrl != null)
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.network(
+                                        item.menuItem.imageUrl!,
+                                        width: 60, height: 60, fit: BoxFit.cover,
                                       ),
+                                    )
+                                  else
+                                    Container(
+                                      width: 60, height: 60,
+                                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(8)),
+                                      child: const Icon(Icons.fastfood, color: Colors.grey),
                                     ),
-                                    Row(
+                                  const SizedBox(width: 12),
+                                  
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(item.menuItem.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        const SizedBox(height: 4),
+                                        Text(Formatters.formatCurrency(item.totalPrice), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                                        if (item.specialInstructions != null)
+                                          Padding(
+                                            padding: const EdgeInsets.only(top: 4.0),
+                                            child: Text(
+                                              'Note: ${item.specialInstructions}', 
+                                              style: TextStyle(color: Colors.orange.shade700, fontSize: 12, fontWeight: FontWeight.w600),
+                                            ),
+                                          ),
+                                        TextButton.icon(
+                                          onPressed: () async {
+                                            await _addNoteDialog(index);
+                                            setModalState((){});
+                                          },
+                                          icon: const Icon(Icons.edit_note, size: 14),
+                                          label: const Text('Add Note', style: TextStyle(fontSize: 12)),
+                                          style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                  
+                                  // Quantity Controls
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         IconButton(
-                                          icon: const Icon(Icons.remove_circle_outline),
+                                          icon: const Icon(Icons.remove, size: 18),
                                           onPressed: () {
                                             setModalState(() {});
                                             _updateQuantity(index, -1);
@@ -227,7 +293,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                         ),
                                         Text('${item.quantity}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                                         IconButton(
-                                          icon: const Icon(Icons.add_circle_outline),
+                                          icon: const Icon(Icons.add, size: 18),
                                           onPressed: () {
                                             setModalState(() {});
                                             _updateQuantity(index, 1);
@@ -235,91 +301,119 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             );
                           },
                         ),
                       ),
-                    const Divider(),
-                    // Table Selection
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Select Table', border: OutlineInputBorder()),
-                      initialValue: _selectedTableCode,
-                      items: availableTables.map((t) => DropdownMenuItem(
-                        value: t.code,
-                        child: Text('${t.code} - ${t.name}'),
-                      )).toList(),
-                      onChanged: (val) {
-                        setModalState(() => _selectedTableCode = val);
-                        setState(() => _selectedTableCode = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // Payment Method
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder()),
-                      initialValue: _paymentMethod,
-                      items: const [
-                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                        DropdownMenuItem(value: 'card', child: Text('Card')),
-                        DropdownMenuItem(value: 'room_charge', child: Text('Room Charge')),
-                      ],
-                      onChanged: (val) {
-                        setModalState(() {
-                          _paymentMethod = val!;
-                          if (_paymentMethod != 'room_charge') _selectedRoomId = null;
-                        });
-                        setState(() {});
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // Room Selection (only if room charge)
-                    if (_paymentMethod == 'room_charge')
-                      roomsAsync.when(
-                        loading: () => const LinearProgressIndicator(),
-                        error: (e, s) => Text('Error loading rooms: $e', style: const TextStyle(color: Colors.red)),
-                        data: (rooms) {
-                          // Only allow occupied rooms
-                          final occupied = rooms.where((r) => r.status == 'occupied').toList();
-                          return DropdownButtonFormField<int>(
-                            decoration: const InputDecoration(labelText: 'Select Room to Charge', border: OutlineInputBorder()),
-                            initialValue: _selectedRoomId,
-                            items: occupied.map((r) => DropdownMenuItem(
-                              value: r.id,
-                              child: Text('Room ${r.roomNumber} - ${r.currentGuestName ?? "Guest"}'),
+                    const Divider(height: 24),
+                    
+                    // Order Settings
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Select Table (Dine-in)',
+                              prefixIcon: const Icon(Icons.table_restaurant),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true, fillColor: Colors.white,
+                            ),
+                            initialValue: _selectedTableCode,
+                            items: availableTables.map((t) => DropdownMenuItem(
+                              value: t.code,
+                              child: Text('${t.code} - ${t.name} (${t.status})'),
                             )).toList(),
                             onChanged: (val) {
-                              setModalState(() => _selectedRoomId = val);
-                              setState(() => _selectedRoomId = val);
+                              setModalState(() => _selectedTableCode = val);
+                              setState(() => _selectedTableCode = val);
                             },
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: 'Payment Method',
+                              prefixIcon: const Icon(Icons.payment),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true, fillColor: Colors.white,
+                            ),
+                            initialValue: _paymentMethod,
+                            items: const [
+                              DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                              DropdownMenuItem(value: 'card', child: Text('Card')),
+                              DropdownMenuItem(value: 'room_charge', child: Text('Room Charge')),
+                            ],
+                            onChanged: (val) {
+                              setModalState(() {
+                                _paymentMethod = val!;
+                                if (_paymentMethod != 'room_charge') _selectedRoomId = null;
+                              });
+                              setState(() {});
+                            },
+                          ),
+                          if (_paymentMethod == 'room_charge') ...[
+                            const SizedBox(height: 12),
+                            roomsAsync.when(
+                              loading: () => const LinearProgressIndicator(),
+                              error: (e, s) => Text('Error: $e', style: const TextStyle(color: Colors.red)),
+                              data: (rooms) {
+                                final occupied = rooms.where((r) => r.status == 'occupied').toList();
+                                return DropdownButtonFormField<int>(
+                                  decoration: InputDecoration(
+                                    labelText: 'Select Room to Charge',
+                                    prefixIcon: const Icon(Icons.bed),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    filled: true, fillColor: Colors.white,
+                                  ),
+                                  initialValue: _selectedRoomId,
+                                  items: occupied.map((r) => DropdownMenuItem(
+                                    value: r.id,
+                                    child: Text('Room ${r.roomNumber} - ${r.currentGuestName ?? "Guest"}'),
+                                  )).toList(),
+                                  onChanged: (val) {
+                                    setModalState(() => _selectedRoomId = val);
+                                    setState(() => _selectedRoomId = val);
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ],
                       ),
+                    ),
                     
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        Text(Formatters.formatCurrency(_cartTotal), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
+                        const Text('Total Amount:', style: TextStyle(fontSize: 20, color: Colors.grey)),
+                        Text(Formatters.formatCurrency(_cartTotal), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.primary)),
                       ],
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(vertical: 20),
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 4,
                       ),
-                      onPressed: _isSubmitting ? null : () {
+                      onPressed: _isSubmitting || _cart.isEmpty ? null : () {
                         setModalState(() {}); 
                         _submitOrder();
                       },
                       child: _isSubmitting 
                           ? const SizedBox(height: 24, width: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
-                          : const Text('Checkout & Submit Order', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          : const Text('SUBMIT ORDER TO KITCHEN', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1)),
                     ),
                   ],
                 ),
@@ -343,15 +437,24 @@ class _POSScreenState extends ConsumerState<POSScreen> {
       tablesList = tablesAsync.value!;
     }
 
-    final categories = ['All', 'Mains', 'Beverages', 'Desserts', 'Starters']; // Dynamic later if API provides, but static chips work best for UI if known.
+    final categories = ['All', 'Mains', 'Beverages', 'Desserts', 'Starters'];
     final currentCategory = ref.watch(posCategoryFilterProvider);
 
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: Colors.grey.shade100,
         appBar: AppBar(
-          title: const Text('Restaurant POS'),
+          title: const Text('Restaurant POS', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black87,
+          elevation: 1,
           bottom: const TabBar(
+            labelColor: AppColors.primary,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: AppColors.primary,
+            indicatorWeight: 3,
+            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             tabs: [
               Tab(icon: Icon(Icons.restaurant_menu), text: 'Menu'),
               Tab(icon: Icon(Icons.table_restaurant), text: 'Tables'),
@@ -376,25 +479,28 @@ class _POSScreenState extends ConsumerState<POSScreen> {
             Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
-                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                  ),
                   child: Column(
                     children: [
                       TextField(
                         onChanged: (val) => ref.read(posSearchQueryProvider.notifier).state = val,
                         decoration: InputDecoration(
-                          hintText: 'Search menu items...',
-                          prefixIcon: const Icon(Icons.search),
+                          hintText: 'Search delicious meals...',
+                          prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                           filled: true,
                           fillColor: Colors.grey.shade100,
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(30),
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       SizedBox(
                         height: 40,
                         child: ListView.separated(
@@ -405,10 +511,13 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                             final cat = categories[index];
                             final isSelected = cat == currentCategory;
                             return ChoiceChip(
-                              label: Text(cat),
+                              label: Text(cat, style: const TextStyle(fontWeight: FontWeight.bold)),
                               selected: isSelected,
                               selectedColor: AppColors.primary,
-                              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black),
+                              backgroundColor: Colors.grey.shade200,
+                              labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               onSelected: (selected) {
                                 if (selected) ref.read(posCategoryFilterProvider.notifier).state = cat;
                               },
@@ -436,17 +545,19 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                         );
                       }
                       return GridView.builder(
-                        padding: const EdgeInsets.all(12),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.85,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
+                          childAspectRatio: 0.75,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
                         ),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return Card(
+                            elevation: 4,
+                            shadowColor: Colors.black.withOpacity(0.2),
                             clipBehavior: Clip.antiAlias,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: InkWell(
@@ -454,29 +565,86 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  // Image Header
                                   Expanded(
-                                    child: Container(
-                                      color: Colors.grey.shade200,
-                                      child: const Icon(Icons.fastfood, size: 40, color: Colors.grey), // Placeholder for image
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(12.0),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                    flex: 3,
+                                    child: Stack(
+                                      fit: StackFit.expand,
                                       children: [
-                                        Text(
-                                          item.name, 
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          Formatters.formatCurrency(item.price),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 16),
+                                        if (item.imageUrl != null)
+                                          Image.network(item.imageUrl!, fit: BoxFit.cover)
+                                        else
+                                          Container(
+                                            color: Colors.grey.shade200,
+                                            child: const Icon(Icons.fastfood, size: 40, color: Colors.grey),
+                                          ),
+                                        // Category Badge
+                                        if (item.categoryName != null)
+                                          Positioned(
+                                            top: 8, left: 8,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black87,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: Text(item.categoryName!, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                                            ),
+                                          ),
+                                        // Add Button Overlay
+                                        Positioned(
+                                          bottom: 8, right: 8,
+                                          child: Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primary,
+                                              shape: BoxShape.circle,
+                                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
+                                            ),
+                                            child: const Icon(Icons.add, color: Colors.white, size: 20),
+                                          ),
                                         ),
                                       ],
+                                    ),
+                                  ),
+                                  // Details Footer
+                                  Expanded(
+                                    flex: 2,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(12.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            item.name, 
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                Formatters.formatCurrency(item.price),
+                                                style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 16),
+                                              ),
+                                              Row(
+                                                children: [
+                                                  if (item.isVegetarian) const Icon(Icons.eco, color: Colors.green, size: 16),
+                                                  if (item.isSpicy) const Icon(Icons.local_fire_department, color: Colors.red, size: 16),
+                                                  if (item.preparationTime > 0) ...[
+                                                    const SizedBox(width: 4),
+                                                    Icon(Icons.timer_outlined, color: Colors.grey.shade600, size: 14),
+                                                    const SizedBox(width: 2),
+                                                    Text('${item.preparationTime}m', style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
+                                                  ]
+                                                ],
+                                              ),
+                                            ],
+                                          )
+                                        ],
+                                      ),
                                     ),
                                   )
                                 ],
@@ -501,24 +669,39 @@ class _POSScreenState extends ConsumerState<POSScreen> {
               ),
               data: (tables) {
                 return GridView.builder(
-                  padding: const EdgeInsets.all(12),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 1.3,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
+                    childAspectRatio: 1.1,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
                   ),
                   itemCount: tables.length,
                   itemBuilder: (context, index) {
                     final table = tables[index];
+                    final isOccupied = table.status == 'occupied';
                     return Card(
+                      elevation: isOccupied ? 6 : 2,
+                      shadowColor: isOccupied ? AppColors.primary.withOpacity(0.4) : Colors.black12,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: isOccupied ? AppColors.primary : Colors.transparent, width: 2),
+                      ),
                       child: InkWell(
                         onTap: () {
                           setState(() => _selectedTableCode = table.code);
                           _showCartBottomSheet(tablesList);
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: isOccupied ? LinearGradient(
+                              colors: [Colors.white, AppColors.primary.withOpacity(0.05)],
+                              begin: Alignment.topLeft, end: Alignment.bottomRight,
+                            ) : null,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -526,16 +709,46 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    table.code,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black87,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      table.code,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
+                                    ),
                                   ),
                                   StatusBadge(status: table.status),
                                 ],
                               ),
-                              Text('${table.name} • Cap: ${table.capacity}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.people, size: 16, color: Colors.grey),
+                                      const SizedBox(width: 6),
+                                      Text('${table.capacity} Seats', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.place, size: 16, color: Colors.grey),
+                                      const SizedBox(width: 6),
+                                      Text(table.area ?? 'Main', style: const TextStyle(color: Colors.grey)),
+                                    ],
+                                  ),
+                                ],
+                              ),
                               if (table.currentOrderNumber != null)
-                                Text('Order: ${table.currentOrderNumber}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                  decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(6)),
+                                  child: Text('Active: ${table.currentOrderNumber}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange.shade800)),
+                                ),
                             ],
                           ),
                         ),
@@ -563,39 +776,74 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
                     final order = orders[index];
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 3,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       child: Padding(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  order.orderNumber,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                                      child: const Icon(Icons.receipt, color: AppColors.primary),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          order.orderNumber,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                        ),
+                                        Text(
+                                          order.tableNumber != null ? 'Table: ${order.tableNumber}' : (order.roomNumber != null ? 'Room: ${order.roomNumber}' : 'Takeaway'),
+                                          style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                                 StatusBadge(status: order.status),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text('Table: ${order.tableNumber ?? "N/A"} | Items: ${order.items.length}'),
-                            const SizedBox(height: 8),
-                            const Divider(),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Text(
+                                '${order.items.length} items: ${order.items.map((i) => "${i.quantity}x ${i.itemName}").join(", ")}',
+                                style: const TextStyle(color: Colors.black87),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Divider(height: 1),
+                            const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
+                                StatusBadge(status: order.paymentStatus),
                                 Text(
                                   'Total: ${Formatters.formatCurrency(order.totalAmount)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primary),
                                 ),
-                                StatusBadge(status: order.paymentStatus),
                               ],
                             ),
                           ],
@@ -610,10 +858,14 @@ class _POSScreenState extends ConsumerState<POSScreen> {
         ),
         floatingActionButton: _cart.isNotEmpty ? FloatingActionButton.extended(
           onPressed: () => _showCartBottomSheet(tablesList),
-          icon: const Icon(Icons.shopping_cart),
-          label: Text('${_cart.fold(0, (sum, i) => sum + i.quantity)} Items • ${Formatters.formatCurrency(_cartTotal)}'),
+          icon: const Icon(Icons.shopping_cart, size: 24),
+          label: Text(
+            '${_cart.fold(0, (sum, i) => sum + i.quantity)} Items • ${Formatters.formatCurrency(_cartTotal)}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
+          elevation: 6,
         ) : null,
       ),
     );

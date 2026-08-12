@@ -4,6 +4,7 @@ import '../../models/room_model.dart';
 import '../../providers/rooms_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../status/status_badge.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/theme/app_colors.dart';
@@ -69,6 +70,7 @@ class _RoomDetailsSheetState extends ConsumerState<RoomDetailsSheet> {
       await repo.updateRoomStatus(widget.room.id, _selectedStatus);
 
       ref.invalidate(roomsListProvider);
+      ref.invalidate(dashboardStatsProvider);
 
       if (mounted) {
         Navigator.pop(context);

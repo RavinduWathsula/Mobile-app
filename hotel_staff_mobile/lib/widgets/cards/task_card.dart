@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/housekeeping_task_model.dart';
-import '../status/status_badge.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 
 class TaskCard extends StatelessWidget {
@@ -19,34 +17,54 @@ class TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isHighPriority = task.priority.toLowerCase() == 'high';
+    final isHighPriority = task.priority.toLowerCase() == 'high' || task.priority.toLowerCase() == 'urgent';
+    final isCompleted = task.status.toLowerCase() == 'completed';
+    final isInProgress = task.status.toLowerCase() == 'in_progress';
+
+    // Accent colors
+    final accentColor = isCompleted 
+        ? Colors.grey.shade400 
+        : (isHighPriority ? const Color(0xFFEF4444) : const Color(0xFF3B82F6));
+    final bgColor = isCompleted ? Colors.grey.shade50 : Colors.white;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isHighPriority ? AppColors.danger.withAlpha(50) : Colors.grey.shade200,
-          width: isHighPriority ? 2 : 1,
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
-            blurRadius: 10,
+            color: Colors.black.withAlpha(5),
+            blurRadius: 20,
             offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Stack(
         children: [
-          // Header Section
+          // Left Edge Accent Line
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: 5,
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Header: Room & Status
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,44 +75,51 @@ class TaskCard extends StatelessWidget {
                         children: [
                           Text(
                             'Room ${task.roomNumber ?? task.roomId}',
-                            style: AppTypography.headlineSmall.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: isCompleted ? Colors.grey.shade600 : Colors.black87,
+                              letterSpacing: -0.5,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            task.roomTypeName ?? 'Room',
-                            style: AppTypography.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                            task.roomTypeName ?? 'Standard Room',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade500,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    StatusBadge(status: task.status),
+                    _buildStatusPill(task.status),
                   ],
                 ),
-                const SizedBox(height: 16),
                 
-                // Details Grid
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Divider(height: 1, thickness: 1),
+                ),
+                
+                // Info Section
                 Row(
                   children: [
                     Expanded(
-                      child: _buildDetailItem(
-                        icon: Icons.cleaning_services,
-                        label: 'Task Type',
+                      child: _buildInfoItem(
+                        icon: task.taskType.toLowerCase() == 'maintenance' ? Icons.build_circle_outlined : Icons.cleaning_services_outlined,
+                        title: 'Task Type',
                         value: task.taskType.toUpperCase(),
-                        valueColor: AppColors.primary,
+                        valueColor: isCompleted ? Colors.grey.shade600 : AppColors.primary,
                       ),
                     ),
                     Expanded(
-                      child: _buildDetailItem(
-                        icon: Icons.priority_high,
-                        label: 'Priority',
-                        value: task.priority.toUpperCase(),
-                        valueColor: isHighPriority ? AppColors.danger : AppColors.textPrimary,
-                        isBold: isHighPriority,
+                      child: _buildInfoItem(
+                        icon: Icons.person_outline_rounded,
+                        title: 'Assignee',
+                        value: task.assigneeName ?? 'Unassigned',
+                        valueColor: isCompleted ? Colors.grey.shade600 : Colors.black87,
                       ),
                     ),
                   ],
@@ -103,106 +128,138 @@ class TaskCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: _buildDetailItem(
-                        icon: Icons.person_outline,
-                        label: 'Assignee',
-                        value: task.assigneeName ?? 'Unassigned',
+                      child: _buildInfoItem(
+                        icon: Icons.flag_outlined,
+                        title: 'Priority',
+                        value: task.priority.toUpperCase(),
+                        valueColor: isHighPriority && !isCompleted ? AppColors.danger : Colors.grey.shade700,
+                        isBold: isHighPriority,
                       ),
                     ),
                     Expanded(
-                      child: _buildDetailItem(
-                        icon: Icons.access_time,
-                        label: 'Scheduled',
-                        value: task.scheduledDate.isNotEmpty 
-                            ? _formatDate(task.scheduledDate)
-                            : 'Today',
+                      child: _buildInfoItem(
+                        icon: Icons.calendar_today_outlined,
+                        title: 'Scheduled',
+                        value: task.scheduledDate.isNotEmpty ? _formatDate(task.scheduledDate) : 'Today',
+                        valueColor: Colors.grey.shade700,
                       ),
                     ),
                   ],
                 ),
 
+                // Notes Section
                 if (task.notes != null && task.notes!.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade200),
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Icon(Icons.notes, size: 16, color: Colors.grey.shade600),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Notes',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.grey.shade700,
-                              ),
+                        Icon(Icons.notes_rounded, size: 18, color: Colors.grey.shade600),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            task.notes!,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade800,
+                              height: 1.4,
+                              fontStyle: FontStyle.italic,
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          task.notes!,
-                          style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                          ),
                         ),
                       ],
                     ),
                   ),
                 ],
+                
+                // Actions Footer
+                if (!isCompleted) ...[
+                  const SizedBox(height: 20),
+                  _buildActionRow(isInProgress, accentColor),
+                ],
               ],
             ),
-          ),
-          
-          // Action Buttons Section
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-              border: Border(top: BorderSide(color: Colors.grey.shade200)),
-            ),
-            child: _buildActionRow(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailItem({
+  Widget _buildStatusPill(String status) {
+    Color bgColor;
+    Color textColor;
+    String text = status.toUpperCase().replaceAll('_', ' ');
+
+    switch (status.toLowerCase()) {
+      case 'completed':
+        bgColor = Colors.green.shade50;
+        textColor = Colors.green.shade700;
+        break;
+      case 'in_progress':
+        bgColor = Colors.blue.shade50;
+        textColor = Colors.blue.shade700;
+        break;
+      case 'pending':
+      default:
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade800;
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: textColor,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoItem({
     required IconData icon,
-    required String label,
+    required String title,
     required String value,
-    Color valueColor = AppColors.textPrimary,
+    required Color valueColor,
     bool isBold = false,
   }) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(icon, size: 16, color: AppColors.textSecondary),
+        Icon(icon, size: 18, color: Colors.grey.shade400),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                title,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
               ),
+              const SizedBox(height: 2),
               Text(
                 value,
                 style: TextStyle(
                   fontSize: 13,
                   color: valueColor,
-                  fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -211,68 +268,39 @@ class TaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionRow() {
-    final statusStr = task.status.toLowerCase();
-
-    if (statusStr == 'pending') {
+  Widget _buildActionRow(bool isInProgress, Color accentColor) {
+    if (isInProgress) {
       return SizedBox(
         width: double.infinity,
-        height: 56,
-        child: ElevatedButton.icon(
-          onPressed: onStart,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          icon: const Icon(Icons.play_circle_fill, size: 24),
-          label: const Text('Start Cleaning', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else if (statusStr == 'in_progress') {
-      return SizedBox(
-        width: double.infinity,
-        height: 56,
-        child: ElevatedButton.icon(
+        height: 50,
+        child: FilledButton.tonalIcon(
           onPressed: onComplete,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-            foregroundColor: Colors.white,
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.green.shade50,
+            foregroundColor: Colors.green.shade700,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          icon: const Icon(Icons.check_circle, size: 24),
-          label: const Text('Complete Cleaning', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ),
-      );
-    } else if (statusStr == 'completed') {
-      return Container(
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          color: AppColors.success.withAlpha(20),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.success.withAlpha(50)),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle, color: AppColors.success, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'Completed',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: AppColors.success,
-              ),
-            ),
-          ],
+          icon: const Icon(Icons.check_circle_rounded, size: 20),
+          label: const Text('Mark as Completed', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         ),
       );
     }
-
-    // Fallback
-    return const SizedBox.shrink();
+    
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: onStart,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: accentColor,
+          side: BorderSide(color: accentColor.withAlpha(50), width: 1.5),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: accentColor.withAlpha(10),
+        ),
+        icon: const Icon(Icons.play_circle_outline_rounded, size: 20),
+        label: const Text('Start Task', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+      ),
+    );
   }
 
   String _formatDate(String dateStr) {
