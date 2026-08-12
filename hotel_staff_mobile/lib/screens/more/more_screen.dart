@@ -43,6 +43,13 @@ class MoreScreen extends ConsumerWidget {
         color: const Color(0xFFEC4899), // Pink
         route: '/kitchen',
       ),
+      _ModuleItem(
+        title: 'Day Out Plans',
+        subtitle: 'Manage packages and bookings',
+        icon: Icons.pool_rounded,
+        color: const Color(0xFF06B6D4), // Cyan
+        route: '/more/day_out',
+      ),
     ];
 
     final analyticsModules = [

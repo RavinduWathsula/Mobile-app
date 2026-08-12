@@ -40,7 +40,19 @@ router.get('/', requireRole(...roomReaders), async (req: AuthRequest, res: Respo
     const [rooms, total] = await Promise.all([
       prisma.room.findMany({
         where,
-        include: { roomType: { select: { name: true, basePrice: true, maxOccupancy: true } } },
+        include: { 
+          roomType: { select: { name: true, basePrice: true, maxOccupancy: true } },
+          bookings: {
+            where: { status: { in: ['checked_in'] } },
+            select: { id: true, bookingRef: true, checkIn: true, checkOut: true, guest: { select: { fullName: true } } },
+            take: 1,
+          },
+          housekeepingTasks: {
+            where: { status: { notIn: ['completed', 'cancelled'] } },
+            select: { id: true, status: true, assignee: { select: { fullName: true } } },
+            take: 1,
+          }
+        },
         orderBy: [{ floor: 'asc' }, { roomNumber: 'asc' }],
         skip,
         take: limit,
@@ -48,7 +60,18 @@ router.get('/', requireRole(...roomReaders), async (req: AuthRequest, res: Respo
       prisma.room.count({ where }),
     ]);
 
-    res.json(paginatedResponse(rooms, total, { page, limit, skip }));
+    const mappedRooms = rooms.map(room => {
+      const activeBooking = room.bookings && room.bookings.length > 0 ? room.bookings[0] : null;
+      return {
+        ...room,
+        currentGuestName: activeBooking?.guest?.fullName || null,
+        currentBookingRef: activeBooking?.bookingRef || null,
+        currentBookingCheckIn: activeBooking?.checkIn || null,
+        currentBookingCheckOut: activeBooking?.checkOut || null,
+      };
+    });
+
+    res.json(paginatedResponse(mappedRooms, total, { page, limit, skip }));
   } catch (error) {
     next(error);
   }

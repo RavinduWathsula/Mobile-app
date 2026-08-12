@@ -27,17 +27,17 @@ class HousekeepingTaskModel {
 
   factory HousekeepingTaskModel.fromJson(Map<String, dynamic> json) {
     return HousekeepingTaskModel(
-      id: json['id'] as int,
-      roomId: json['roomId'] as int,
-      taskType: json['taskType'] as String? ?? 'cleaning',
-      priority: json['priority'] as String? ?? 'medium',
-      status: json['status'] as String? ?? 'pending',
-      assignedTo: json['assignedTo'] as int?,
-      notes: json['notes'] as String?,
-      scheduledDate: json['scheduledDate'] as String? ?? '',
-      roomNumber: json['room']?['roomNumber'] as String?,
-      roomTypeName: json['room']?['roomType']?['name'] as String?,
-      assigneeName: json['assignee']?['fullName'] as String?,
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      roomId: json['roomId'] != null ? (int.tryParse(json['roomId'].toString()) ?? 0) : 0,
+      taskType: json['taskType']?.toString() ?? 'cleaning',
+      priority: json['priority']?.toString() ?? 'medium',
+      status: json['status']?.toString() ?? 'pending',
+      assignedTo: json['assignedTo'] != null ? int.tryParse(json['assignedTo'].toString()) : null,
+      notes: json['notes']?.toString(),
+      scheduledDate: json['scheduledDate']?.toString() ?? '',
+      roomNumber: json['room']?['roomNumber']?.toString(),
+      roomTypeName: json['room']?['roomType']?['name']?.toString(),
+      assigneeName: json['assignee']?['fullName']?.toString(),
     );
   }
 }

@@ -8,11 +8,15 @@ import '../../core/theme/app_typography.dart';
 class BookingCard extends StatelessWidget {
   final BookingModel booking;
   final VoidCallback? onTap;
+  final VoidCallback? onAction;
+  final String? actionLabel;
 
   const BookingCard({
     super.key,
     required this.booking,
     this.onTap,
+    this.onAction,
+    this.actionLabel,
   });
 
   @override
@@ -65,6 +69,17 @@ class BookingCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
+                  const Icon(Icons.group_outlined, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${booking.adults} Adults${booking.children > 0 ? ', ${booking.children} Children' : ''}',
+                    style: AppTypography.bodySmall,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
                   const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.textSecondary),
                   const SizedBox(width: 8),
                   Text(
@@ -82,15 +97,51 @@ class BookingCard extends StatelessWidget {
                     style: AppTypography.bodyMedium.copyWith(fontWeight: FontWeight.bold),
                   ),
                   if (booking.balanceDue > 0)
-                    Text(
-                      'Due: ${Formatters.formatCurrency(booking.balanceDue)}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.danger,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.danger.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Due: ${Formatters.formatCurrency(booking.balanceDue)}',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Paid',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                 ],
               ),
+              if (onAction != null && actionLabel != null) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: onAction,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side: const BorderSide(color: AppColors.primary),
+                    ),
+                    child: Text(actionLabel!),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

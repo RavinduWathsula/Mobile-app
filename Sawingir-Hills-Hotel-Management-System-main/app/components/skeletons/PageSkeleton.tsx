@@ -6,8 +6,8 @@ interface PageSkeletonProps {
   columns?: number;
 }
 
-function Pulse({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} />;
+function Pulse({ className = "", style }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} style={style} />;
 }
 
 export function StatCardSkeleton() {

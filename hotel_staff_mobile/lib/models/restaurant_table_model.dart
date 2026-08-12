@@ -27,17 +27,17 @@ class RestaurantTableModel {
 
   factory RestaurantTableModel.fromJson(Map<String, dynamic> json) {
     return RestaurantTableModel(
-      id: json['id'] as int,
-      code: json['code'] as String,
-      name: json['name'] as String,
-      area: json['area'] as String? ?? 'Restaurant',
-      capacity: json['capacity'] as int? ?? 2,
-      isActive: json['isActive'] as bool? ?? true,
-      status: json['status'] as String? ?? 'available',
-      openOrderCount: json['openOrderCount'] as int? ?? 0,
-      currentOrderId: json['currentOrderId'] as int?,
-      currentOrderNumber: json['currentOrderNumber'] as String?,
-      currentWaiter: json['currentWaiter'] as String?,
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      code: json['code']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      area: json['area']?.toString() ?? 'Restaurant',
+      capacity: json['capacity'] != null ? (int.tryParse(json['capacity'].toString()) ?? 2) : 2,
+      isActive: json['isActive'] != false && json['isActive'] != 'false',
+      status: json['status']?.toString() ?? 'available',
+      openOrderCount: json['openOrderCount'] != null ? (int.tryParse(json['openOrderCount'].toString()) ?? 0) : 0,
+      currentOrderId: json['currentOrderId'] != null ? int.tryParse(json['currentOrderId'].toString()) : null,
+      currentOrderNumber: json['currentOrderNumber']?.toString(),
+      currentWaiter: json['currentWaiter']?.toString(),
     );
   }
 }

@@ -268,7 +268,7 @@ export function DayOutPlans() {
 
   const handleTogglePlanStatus = (planId: number) => {
     const updatedPlans = plans.map((p) =>
-      p.id === planId ? { ...p, status: p.status === "active" ? "inactive" : "active" } : p
+      p.id === planId ? { ...p, status: (p.status === "active" ? "inactive" : "active") as "active" | "inactive" } : p
     );
     setPlans(updatedPlans);
     localStorage.setItem("dayOutPlans", JSON.stringify(updatedPlans));

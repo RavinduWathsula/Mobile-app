@@ -27,17 +27,17 @@ class MenuItemModel {
 
   factory MenuItemModel.fromJson(Map<String, dynamic> json) {
     return MenuItemModel(
-      id: json['id'] as int,
-      categoryId: json['categoryId'] as int,
-      name: json['name'] as String,
-      description: json['description'] as String?,
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      categoryId: json['categoryId'] != null ? (int.tryParse(json['categoryId'].toString()) ?? 0) : 0,
+      name: json['name']?.toString() ?? 'Unknown',
+      description: json['description']?.toString(),
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
-      preparationTime: json['preparationTime'] as int? ?? 15,
-      isVegetarian: json['isVegetarian'] as bool? ?? false,
-      isSpicy: json['isSpicy'] as bool? ?? false,
-      isAvailable: json['isAvailable'] as bool? ?? true,
-      imageUrl: json['imageUrl'] as String?,
-      categoryName: json['category']?['name'] as String?,
+      preparationTime: json['preparationTime'] != null ? (int.tryParse(json['preparationTime'].toString()) ?? 15) : 15,
+      isVegetarian: json['isVegetarian'] == true || json['isVegetarian'] == 'true',
+      isSpicy: json['isSpicy'] == true || json['isSpicy'] == 'true',
+      isAvailable: json['isAvailable'] != false && json['isAvailable'] != 'false',
+      imageUrl: json['imageUrl']?.toString(),
+      categoryName: json['category']?['name']?.toString(),
     );
   }
 }

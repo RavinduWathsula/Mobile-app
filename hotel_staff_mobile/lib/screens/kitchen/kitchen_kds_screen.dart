@@ -6,10 +6,16 @@ import '../../widgets/common/drawer_navigation.dart';
 import '../../widgets/status/status_badge.dart';
 import '../../widgets/loading/loading_indicator.dart';
 import '../../widgets/empty_states/empty_state_view.dart';
+import '../../models/restaurant_order_model.dart';
 
-class KitchenKDSScreen extends ConsumerWidget {
+class KitchenKDSScreen extends ConsumerStatefulWidget {
   const KitchenKDSScreen({super.key});
 
+  @override
+  ConsumerState<KitchenKDSScreen> createState() => _KitchenKDSScreenState();
+}
+
+class _KitchenKDSScreenState extends ConsumerState<KitchenKDSScreen> {
   void _updateItemStatus(
     BuildContext context,
     WidgetRef ref,
@@ -30,13 +36,33 @@ class KitchenKDSScreen extends ConsumerWidget {
     }
   }
 
+  Color _getOrderColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Colors.red.shade100;
+      case 'preparing': return Colors.orange.shade100;
+      case 'ready': return Colors.green.shade100;
+      default: return Colors.grey.shade100;
+    }
+  }
+
+  Color _getOrderBorderColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending': return Colors.red;
+      case 'preparing': return Colors.orange;
+      case 'ready': return Colors.green;
+      default: return Colors.grey;
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final ordersAsync = ref.watch(kitchenOrdersProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kitchen Display (KDS)'),
+        title: const Text('Kitchen Display (KDS)', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.grey.shade900,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -45,6 +71,7 @@ class KitchenKDSScreen extends ConsumerWidget {
         ],
       ),
       drawer: const DrawerNavigation(),
+      backgroundColor: Colors.grey.shade200,
       body: ordersAsync.when(
         loading: () => const LoadingIndicator(message: 'Connecting to live kitchen feed...'),
         error: (err, stack) => EmptyStateView(
@@ -61,65 +88,113 @@ class KitchenKDSScreen extends ConsumerWidget {
             );
           }
 
-          return ListView.builder(
+          return GridView.builder(
             padding: const EdgeInsets.all(12),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 600 ? 2 : 1,
+              mainAxisExtent: 350,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
               return Card(
-                color: Colors.orange.withValues(alpha: 0.04),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: _getOrderBorderColor(order.status), width: 2),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _getOrderColor(order.status),
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                      ),
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Order ${order.orderNumber} (${order.tableNumber ?? "Takeaway"})',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          Expanded(
+                            child: Text(
+                              'Order ${order.orderNumber} • ${order.tableNumber ?? "Takeaway"}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                           StatusBadge(status: order.status),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text('Staff: ${order.creatorName ?? "Server"}'),
-                      const Divider(),
-                      ...order.items.map((item) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
+                    ),
+                    
+                    // Order Info
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      child: Text('Server: ${order.creatorName ?? "Server"}', style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                    ),
+                    const Divider(height: 1),
+
+                    // Items
+                    Expanded(
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(8),
+                        itemCount: order.items.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (context, itemIndex) {
+                          final item = order.items[itemIndex];
+                          return Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text('${item.quantity}x', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.itemName,
+                                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+                                    ),
+                                    if (item.specialInstructions != null && item.specialInstructions!.isNotEmpty)
                                       Text(
-                                        '${item.quantity}x ${item.itemName}',
-                                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                                        'NOTE: ${item.specialInstructions}',
+                                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12),
                                       ),
-                                      if (item.specialInstructions != null)
-                                        Text('Note: ${item.specialInstructions}', style: const TextStyle(color: Colors.red, fontSize: 12)),
-                                    ],
-                                  ),
+                                  ],
                                 ),
-                                DropdownButton<String>(
-                                  value: item.status,
-                                  items: ['pending', 'preparing', 'ready', 'served', 'cancelled']
-                                      .map((s) => DropdownMenuItem(value: s, child: Text(s.toUpperCase(), style: const TextStyle(fontSize: 12))))
-                                      .toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      _updateItemStatus(context, ref, order.id, item.id, val);
-                                    }
-                                  },
+                              ),
+                              // Status Toggles
+                              SegmentedButton<String>(
+                                segments: const [
+                                  ButtonSegment(value: 'pending', label: Text('Wait'), icon: Icon(Icons.hourglass_empty, size: 16)),
+                                  ButtonSegment(value: 'preparing', label: Text('Prep'), icon: Icon(Icons.soup_kitchen, size: 16)),
+                                  ButtonSegment(value: 'ready', label: Text('Ready'), icon: Icon(Icons.check, size: 16)),
+                                ],
+                                selected: {
+                                  if (['pending', 'preparing', 'ready'].contains(item.status)) item.status else 'pending'
+                                },
+                                onSelectionChanged: (Set<String> newSelection) {
+                                  _updateItemStatus(context, ref, order.id, item.id, newSelection.first);
+                                },
+                                style: const ButtonStyle(
+                                  visualDensity: VisualDensity.compact,
                                 ),
-                              ],
-                            ),
-                          )),
-                    ],
-                  ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               );
             },

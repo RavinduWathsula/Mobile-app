@@ -1,3 +1,4 @@
+import 'dart:io';
 import '../core/network/api_client.dart';
 import '../core/constants/api_endpoints.dart';
 import '../models/room_model.dart';
@@ -32,13 +33,23 @@ class RoomsRepository {
     );
 
     List rawList = [];
-    if (response is Map<String, dynamic> && response['data'] is List) {
-      rawList = response['data'] as List;
-    } else if (response is List) {
-      rawList = response;
-    }
+    try {
+      if (response is Map<String, dynamic> && response['data'] is List) {
+        rawList = response['data'] as List;
+      } else if (response is Map && response.containsKey('data') && response['data'] is List) {
+        rawList = response['data'] as List;
+      } else if (response is List) {
+        rawList = response;
+      }
 
-    return rawList.map((json) => RoomModel.fromJson(json as Map<String, dynamic>)).toList();
+      return rawList.map((json) => RoomModel.fromJson(json as Map<String, dynamic>)).toList();
+    } catch (e, stack) {
+      try {
+        File('rooms_error.txt').writeAsStringSync('Error: $e\n$stack');
+      } catch (_) {}
+      print('Error parsing rooms: $e\n$stack');
+      rethrow;
+    }
   }
 
   Future<RoomModel> updateRoomStatus(int roomId, String status) async {

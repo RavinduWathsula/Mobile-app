@@ -18,6 +18,8 @@ import '../screens/reports/reports_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/more/more_screen.dart';
 import '../screens/settings/settings_screen.dart';
+import '../screens/day_out/day_out_plans_screen.dart';
+import '../screens/day_out/create_day_out_booking_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -143,6 +145,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'settings',
                     builder: (context, state) => const SettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'day_out',
+                    builder: (context, state) => const DayOutPlansScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'create',
+                        builder: (context, state) => const CreateDayOutBookingScreen(),
+                      ),
+                    ],
                   ),
                 ],
               ),

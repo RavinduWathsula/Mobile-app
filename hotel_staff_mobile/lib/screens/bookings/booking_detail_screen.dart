@@ -6,6 +6,8 @@ import '../../providers/services_provider.dart';
 import '../../models/booking_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/loading/loading_indicator.dart';
+import '../../widgets/sheets/record_payment_sheet.dart';
+import 'edit_booking_screen.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final int bookingId;
@@ -27,6 +29,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
       
       // Refresh all relevant providers
       ref.invalidate(bookingsListProvider);
+      ref.invalidate(bookingDetailProvider(widget.bookingId));
       ref.invalidate(todayArrivalsProvider);
       ref.invalidate(upcomingArrivalsProvider);
       ref.invalidate(todayCheckoutsProvider);
@@ -121,23 +124,30 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bookingsAsync = ref.watch(bookingsListProvider);
+    final bookingAsync = ref.watch(bookingDetailProvider(widget.bookingId));
 
     return Scaffold(
       appBar: AppBar(
         title: Text('Booking #${widget.bookingId}'),
+        actions: [
+          if (bookingAsync.valueOrNull != null)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => EditBookingScreen(booking: bookingAsync.value!)),
+                );
+              },
+            ),
+        ],
       ),
       body: _isProcessing 
           ? const LoadingIndicator(message: 'Processing...')
-          : bookingsAsync.when(
+          : bookingAsync.when(
               loading: () => const LoadingIndicator(message: 'Loading details...'),
               error: (err, stack) => Center(child: Text('Error: $err')),
-              data: (bookings) {
-                final booking = bookings.firstWhere(
-                  (b) => b.id == widget.bookingId,
-                  orElse: () => throw Exception('Booking not found'),
-                );
-
+              data: (booking) {
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -339,7 +349,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
         const SizedBox(height: 12),
         if (booking.balanceDue > 0 && (booking.status == 'confirmed' || booking.status == 'checked_in'))
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () => RecordPaymentSheet.show(context, booking),
             icon: const Icon(Icons.payment),
             label: const Text('Record Payment'),
             style: OutlinedButton.styleFrom(

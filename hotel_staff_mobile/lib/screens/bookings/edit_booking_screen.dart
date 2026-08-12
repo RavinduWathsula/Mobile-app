@@ -4,26 +4,29 @@ import 'package:intl/intl.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../models/booking_request_models.dart';
+import '../../models/booking_model.dart';
 import '../../widgets/loading/loading_indicator.dart';
 
-class CreateBookingScreen extends ConsumerStatefulWidget {
-  const CreateBookingScreen({super.key});
+class EditBookingScreen extends ConsumerStatefulWidget {
+  final BookingModel booking;
+
+  const EditBookingScreen({super.key, required this.booking});
 
   @override
-  ConsumerState<CreateBookingScreen> createState() => _CreateBookingScreenState();
+  ConsumerState<EditBookingScreen> createState() => _EditBookingScreenState();
 }
 
-class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
+class _EditBookingScreenState extends ConsumerState<EditBookingScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
 
   // Step 1: Guest Info
-  final _firstNameCtrl = TextEditingController();
-  final _lastNameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _idNumberCtrl = TextEditingController();
+  late final TextEditingController _firstNameCtrl;
+  late final TextEditingController _lastNameCtrl;
+  late final TextEditingController _emailCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _idNumberCtrl;
 
   // Step 2: Stay Dates
   DateTime? _checkIn;
@@ -39,9 +42,34 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   int _adults = 1;
   int _children = 0;
 
-  // Step 6: Payment
-  final _advanceAmountCtrl = TextEditingController();
-  String _paymentMethod = 'cash';
+  @override
+  void initState() {
+    super.initState();
+    _firstNameCtrl = TextEditingController(text: widget.booking.guestFirstName ?? '');
+    _lastNameCtrl = TextEditingController(text: widget.booking.guestLastName ?? '');
+    _emailCtrl = TextEditingController(text: widget.booking.guestEmail ?? '');
+    _phoneCtrl = TextEditingController(text: widget.booking.guestPhone ?? '');
+    _idNumberCtrl = TextEditingController(text: widget.booking.guestIdNumber ?? '');
+
+    if (widget.booking.checkIn.isNotEmpty) {
+      _checkIn = DateTime.tryParse(widget.booking.checkIn);
+    }
+    if (widget.booking.checkOut.isNotEmpty) {
+      _checkOut = DateTime.tryParse(widget.booking.checkOut);
+    }
+
+    _selectedRoomTypeId = widget.booking.roomTypeId;
+    
+    final plan = widget.booking.mealPlan;
+    if (plan == 'bnb' || plan == 'half_board' || plan == 'full_board' || plan == 'half-board' || plan == 'full-board') {
+       _selectedMealPlan = plan.replaceAll('_', '-');
+    } else {
+       _selectedMealPlan = 'room-only';
+    }
+
+    _adults = widget.booking.adults > 0 ? widget.booking.adults : 1;
+    _children = widget.booking.children;
+  }
 
   @override
   void dispose() {
@@ -50,7 +78,6 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
     _idNumberCtrl.dispose();
-    _advanceAmountCtrl.dispose();
     super.dispose();
   }
 
@@ -85,6 +112,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
     try {
       final guest = GuestRequest(
+        id: widget.booking.guestId,
         firstName: _firstNameCtrl.text.trim(),
         lastName: _lastNameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
@@ -93,36 +121,27 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       );
 
       final dateFormat = DateFormat('yyyy-MM-dd');
-      final request = CreateBookingRequest(
+      final request = UpdateBookingRequest(
         guest: guest,
         checkIn: dateFormat.format(ci),
         checkOut: dateFormat.format(co),
         roomTypeId: _selectedRoomTypeId,
+        roomId: widget.booking.roomId,
         adults: _adults,
         children: _children,
         mealPlan: _selectedMealPlan,
-        source: 'walk_in',
+        source: widget.booking.source,
       );
 
       final repo = ref.read(bookingsRepositoryProvider);
-      final newBooking = await repo.createBooking(request);
-
-      final advanceStr = _advanceAmountCtrl.text.trim();
-      if (advanceStr.isNotEmpty) {
-        final advance = double.tryParse(advanceStr) ?? 0;
-        if (advance > 0) {
-          await repo.recordPayment(
-            newBooking.id,
-            PaymentRequest(amount: advance, paymentMethod: _paymentMethod),
-          );
-        }
-      }
+      await repo.updateBooking(widget.booking.id, request);
 
       ref.invalidate(bookingsListProvider);
+      ref.invalidate(bookingDetailProvider(widget.booking.id));
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking created successfully!')),
+          const SnackBar(content: Text('Booking updated successfully!')),
         );
         Navigator.pop(context);
       }
@@ -140,7 +159,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   Future<void> _selectDateRange() async {
     final picked = await showDateRangePicker(
       context: context,
-      firstDate: DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       initialDateRange: _checkIn != null && _checkOut != null
           ? DateTimeRange(start: _checkIn!, end: _checkOut!)
@@ -199,20 +218,26 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Booking'),
+        title: Text('Edit Booking #${widget.booking.id}'),
       ),
       body: _isSubmitting
-          ? const LoadingIndicator(message: 'Creating booking...')
+          ? const LoadingIndicator(message: 'Updating booking...')
           : roomTypesAsync.when(
               loading: () => const LoadingIndicator(message: 'Loading room types...'),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (types) {
+                // Ensure initial roomTypeId exists in types, if not reset or keep
+                bool typeExists = types.any((t) => (int.tryParse(t['id'].toString()) ?? -1) == _selectedRoomTypeId);
+                if (!typeExists && types.isNotEmpty) {
+                  _selectedRoomTypeId = int.tryParse(types.first['id'].toString());
+                }
+
                 return Form(
                   key: _formKey,
                   child: Stepper(
                     currentStep: _currentStep,
                     onStepContinue: () {
-                      if (_currentStep < 6) {
+                      if (_currentStep < 5) {
                         setState(() => _currentStep += 1);
                       } else {
                         _submitForm();
@@ -236,7 +261,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                             backgroundColor: const Color(0xFF2B0A57),
                             foregroundColor: Colors.white,
                           ),
-                          child: Text(_currentStep == 6 ? 'Confirm Booking' : 'Continue'),
+                          child: Text(_currentStep == 5 ? 'Save Changes' : 'Continue'),
                         ),
                         const SizedBox(width: 12),
                         if (_currentStep > 0)
@@ -332,7 +357,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       items: types.asMap().entries.map((entry) {
                         final index = entry.key;
                         final t = entry.value;
-                        int parsedId = -(index + 1); // fallback to negative index to guarantee uniqueness
+                        int parsedId = -(index + 1);
                         if (t['id'] != null) {
                           parsedId = int.tryParse(t['id'].toString()) ?? parsedId;
                         }
@@ -421,46 +446,16 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                               trailing: Text('$nights'),
                             ),
                             ListTile(
-                              title: const Text('Total Estimated Amount'),
+                              title: const Text('New Estimated Total'),
                               trailing: Text('LKR ${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                            ),
+                            ListTile(
+                              title: const Text('Current Total Amount'),
+                              trailing: Text('LKR ${widget.booking.totalAmount.toStringAsFixed(2)}'),
                             ),
                           ],
                         );
                       }
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Payment (Optional)'),
-                    isActive: _currentStep >= 6,
-                    state: StepState.indexed,
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: _advanceAmountCtrl,
-                          decoration: const InputDecoration(labelText: 'Advance Payment (LKR)', border: OutlineInputBorder(), prefixText: 'LKR '),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (val) {
-                            if (val != null && val.trim().isNotEmpty && double.tryParse(val) == null) {
-                              return 'Enter a valid amount';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder()),
-                          initialValue: _paymentMethod,
-                          items: const [
-                            DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                            DropdownMenuItem(value: 'card', child: Text('Card')),
-                            DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                          ],
-                          onChanged: (val) {
-                          if (val != null) setState(() => _paymentMethod = val);
-                        },
-                        ),
-                      ],
                     ),
                   ),
                 ],

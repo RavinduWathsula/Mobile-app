@@ -23,15 +23,15 @@ class OrderItemModel {
 
   factory OrderItemModel.fromJson(Map<String, dynamic> json) {
     return OrderItemModel(
-      id: json['id'] as int,
-      menuItemId: json['menuItemId'] as int,
-      itemName: json['menuItem']?['name'] as String? ?? 'Item',
-      quantity: json['quantity'] as int? ?? 1,
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      menuItemId: json['menuItemId'] != null ? (int.tryParse(json['menuItemId'].toString()) ?? 0) : 0,
+      itemName: json['menuItem']?['name']?.toString() ?? 'Item',
+      quantity: json['quantity'] != null ? (int.tryParse(json['quantity'].toString()) ?? 1) : 1,
       unitPrice: double.tryParse(json['unitPrice']?.toString() ?? '0') ?? 0.0,
       totalPrice: double.tryParse(json['totalPrice']?.toString() ?? '0') ?? 0.0,
-      status: json['status'] as String? ?? 'pending',
-      specialInstructions: json['specialInstructions'] as String?,
-      preparationTime: json['menuItem']?['preparationTime'] as int?,
+      status: json['status']?.toString() ?? 'pending',
+      specialInstructions: json['specialInstructions']?.toString(),
+      preparationTime: json['menuItem']?['preparationTime'] != null ? int.tryParse(json['menuItem']['preparationTime'].toString()) : null,
     );
   }
 }
@@ -77,22 +77,22 @@ class RestaurantOrderModel {
 
   factory RestaurantOrderModel.fromJson(Map<String, dynamic> json) {
     return RestaurantOrderModel(
-      id: json['id'] as int,
-      orderNumber: json['orderNumber'] as String,
-      orderType: json['orderType'] as String? ?? 'dine_in',
-      tableNumber: json['tableNumber'] as String?,
-      roomId: json['roomId'] as int?,
-      guestId: json['guestId'] as int?,
-      status: json['status'] as String? ?? 'pending',
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      orderNumber: json['orderNumber']?.toString() ?? '',
+      orderType: json['orderType']?.toString() ?? 'dine_in',
+      tableNumber: json['tableNumber']?.toString(),
+      roomId: json['roomId'] != null ? int.tryParse(json['roomId'].toString()) : null,
+      guestId: json['guestId'] != null ? int.tryParse(json['guestId'].toString()) : null,
+      status: json['status']?.toString() ?? 'pending',
       subtotal: double.tryParse(json['subtotal']?.toString() ?? '0') ?? 0.0,
       taxAmount: double.tryParse(json['taxAmount']?.toString() ?? '0') ?? 0.0,
       serviceCharge: double.tryParse(json['serviceCharge']?.toString() ?? '0') ?? 0.0,
       discount: double.tryParse(json['discount']?.toString() ?? '0') ?? 0.0,
       totalAmount: double.tryParse(json['totalAmount']?.toString() ?? '0') ?? 0.0,
-      paymentStatus: json['paymentStatus'] as String? ?? 'unpaid',
-      notes: json['notes'] as String?,
-      creatorName: json['creator']?['fullName'] as String?,
-      roomNumber: json['room']?['roomNumber'] as String?,
+      paymentStatus: json['paymentStatus']?.toString() ?? 'unpaid',
+      notes: json['notes']?.toString(),
+      creatorName: json['creator']?['fullName']?.toString(),
+      roomNumber: json['room']?['roomNumber']?.toString(),
       items: (json['items'] as List?)
               ?.map((e) => OrderItemModel.fromJson(e as Map<String, dynamic>))
               .toList() ??

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class RoomModel {
   final int id;
   final String roomNumber;
@@ -12,6 +14,9 @@ class RoomModel {
   final String? assignedHousekeeper;
   final String? housekeepingTaskStatus;
   final String? currentGuestName;
+  final String? currentBookingRef;
+  final DateTime? currentBookingCheckIn;
+  final DateTime? currentBookingCheckOut;
 
   RoomModel({
     required this.id,
@@ -27,6 +32,9 @@ class RoomModel {
     this.assignedHousekeeper,
     this.housekeepingTaskStatus,
     this.currentGuestName,
+    this.currentBookingRef,
+    this.currentBookingCheckIn,
+    this.currentBookingCheckOut,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -35,27 +43,51 @@ class RoomModel {
     String? hkStatus;
     if (json['housekeepingTasks'] is List && (json['housekeepingTasks'] as List).isNotEmpty) {
       final task = (json['housekeepingTasks'] as List).first as Map<String, dynamic>;
-      hkStatus = task['status'] as String?;
-      housekeeperName = task['assignee']?['fullName'] as String?;
+      hkStatus = task['status']?.toString();
+      housekeeperName = task['assignee']?['fullName']?.toString();
     }
 
     return RoomModel(
-      id: json['id'] as int,
-      roomNumber: json['roomNumber'] as String,
-      roomTypeId: json['roomTypeId'] as int? ?? 1,
-      floor: json['floor'] as int? ?? 1,
-      status: json['status'] as String? ?? 'available',
-      features: (json['features'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      notes: json['notes'] as String?,
-      roomTypeName: json['roomType']?['name'] as String?,
+      id: json['id'] != null ? (int.tryParse(json['id'].toString()) ?? 0) : (json['_id'] != null ? json['_id'].hashCode : 0),
+      roomNumber: json['roomNumber']?.toString() ?? '',
+      roomTypeId: json['roomTypeId'] != null ? (int.tryParse(json['roomTypeId'].toString()) ?? 1) : 1,
+      floor: json['floor'] != null ? (int.tryParse(json['floor'].toString()) ?? 1) : 1,
+      status: json['status']?.toString() ?? 'available',
+      features: _parseFeatures(json['features']),
+      notes: json['notes']?.toString(),
+      roomTypeName: json['roomType']?['name']?.toString(),
       basePrice: json['roomType']?['basePrice'] != null
           ? double.tryParse(json['roomType']['basePrice'].toString())
           : null,
-      maxOccupancy: json['roomType']?['maxOccupancy'] as int?,
+      maxOccupancy: json['roomType']?['maxOccupancy'] != null ? int.tryParse(json['roomType']['maxOccupancy'].toString()) : null,
       assignedHousekeeper: housekeeperName,
       housekeepingTaskStatus: hkStatus,
-      currentGuestName: json['currentGuestName'] as String?,
+      currentGuestName: json['currentGuestName']?.toString(),
+      currentBookingRef: json['currentBookingRef']?.toString(),
+      currentBookingCheckIn: json['currentBookingCheckIn'] != null ? DateTime.tryParse(json['currentBookingCheckIn'].toString()) : null,
+      currentBookingCheckOut: json['currentBookingCheckOut'] != null ? DateTime.tryParse(json['currentBookingCheckOut'].toString()) : null,
     );
+  }
+
+  static List<String> _parseFeatures(dynamic featuresData) {
+    if (featuresData == null) return [];
+    if (featuresData is List) {
+      return featuresData.map((e) => e.toString()).toList();
+    }
+    if (featuresData is String) {
+      try {
+        // If it's a JSON string array, we could try to decode it.
+        // For now just return it as a single feature if it's not empty, or try parsing.
+        if (featuresData.startsWith('[')) {
+          final List decoded = List.from(jsonDecode(featuresData) as Iterable);
+          return decoded.map((e) => e.toString()).toList();
+        }
+        return [featuresData];
+      } catch (_) {
+        return [featuresData];
+      }
+    }
+    return [];
   }
 
   RoomModel copyWith({
@@ -72,6 +104,9 @@ class RoomModel {
     String? assignedHousekeeper,
     String? housekeepingTaskStatus,
     String? currentGuestName,
+    String? currentBookingRef,
+    DateTime? currentBookingCheckIn,
+    DateTime? currentBookingCheckOut,
   }) {
     return RoomModel(
       id: id ?? this.id,
@@ -87,6 +122,9 @@ class RoomModel {
       assignedHousekeeper: assignedHousekeeper ?? this.assignedHousekeeper,
       housekeepingTaskStatus: housekeepingTaskStatus ?? this.housekeepingTaskStatus,
       currentGuestName: currentGuestName ?? this.currentGuestName,
+      currentBookingRef: currentBookingRef ?? this.currentBookingRef,
+      currentBookingCheckIn: currentBookingCheckIn ?? this.currentBookingCheckIn,
+      currentBookingCheckOut: currentBookingCheckOut ?? this.currentBookingCheckOut,
     );
   }
 }

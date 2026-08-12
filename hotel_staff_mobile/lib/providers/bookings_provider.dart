@@ -13,6 +13,11 @@ final bookingsListProvider = FutureProvider.autoDispose<List<BookingModel>>((ref
   return await repo.getBookings(status: status, search: search);
 });
 
+final bookingDetailProvider = FutureProvider.family.autoDispose<BookingModel, int>((ref, id) async {
+  final repo = ref.watch(bookingsRepositoryProvider);
+  return await repo.getBookingById(id);
+});
+
 final todayArrivalsProvider = FutureProvider.autoDispose<List<BookingModel>>((ref) async {
   final repo = ref.watch(bookingsRepositoryProvider);
   return await repo.getTodayArrivals();

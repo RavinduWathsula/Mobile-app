@@ -26,16 +26,16 @@ class DashboardStatsModel {
   factory DashboardStatsModel.fromJson(Map<String, dynamic> json) {
     final rooms = json['rooms'] as Map<String, dynamic>? ?? {};
     return DashboardStatsModel(
-      totalRooms: rooms['total_rooms'] as int? ?? 0,
-      occupiedRooms: rooms['occupied'] as int? ?? 0,
-      availableRooms: rooms['available'] as int? ?? 0,
-      dirtyRooms: rooms['dirty'] as int? ?? 0,
-      maintenanceRooms: rooms['maintenance'] as int? ?? 0,
-      occupancyRate: json['occupancy_rate'] as int? ?? 0,
-      todayArrivals: json['today_arrivals'] as int? ?? 0,
-      todayCheckouts: json['today_checkouts'] as int? ?? 0,
+      totalRooms: rooms['total_rooms'] != null ? (int.tryParse(rooms['total_rooms'].toString()) ?? 0) : 0,
+      occupiedRooms: rooms['occupied'] != null ? (int.tryParse(rooms['occupied'].toString()) ?? 0) : 0,
+      availableRooms: rooms['available'] != null ? (int.tryParse(rooms['available'].toString()) ?? 0) : 0,
+      dirtyRooms: rooms['dirty'] != null ? (int.tryParse(rooms['dirty'].toString()) ?? 0) : 0,
+      maintenanceRooms: rooms['maintenance'] != null ? (int.tryParse(rooms['maintenance'].toString()) ?? 0) : 0,
+      occupancyRate: json['occupancy_rate'] != null ? (int.tryParse(json['occupancy_rate'].toString()) ?? 0) : 0,
+      todayArrivals: json['today_arrivals'] != null ? (int.tryParse(json['today_arrivals'].toString()) ?? 0) : 0,
+      todayCheckouts: json['today_checkouts'] != null ? (int.tryParse(json['today_checkouts'].toString()) ?? 0) : 0,
       revenueToday: double.tryParse(json['revenue_today']?.toString() ?? '0') ?? 0.0,
-      pendingPayments: json['pending_payments'] as int? ?? 0,
+      pendingPayments: json['pending_payments'] != null ? (int.tryParse(json['pending_payments'].toString()) ?? 0) : 0,
     );
   }
 }

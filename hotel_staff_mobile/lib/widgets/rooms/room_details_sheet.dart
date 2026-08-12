@@ -248,6 +248,43 @@ class _RoomDetailsSheetState extends ConsumerState<RoomDetailsSheet> {
               const SizedBox(height: 16),
             ],
 
+            // Active Booking Info (if available)
+            if (widget.room.currentBookingRef != null) ...[
+              const Text('Booking Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withAlpha(15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF10B981).withAlpha(40)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_month, color: Color(0xFF10B981)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ref: ${widget.room.currentBookingRef!}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          if (widget.room.currentBookingCheckIn != null && widget.room.currentBookingCheckOut != null)
+                            Text(
+                              'Stay: ${Formatters.formatDate(widget.room.currentBookingCheckIn!)} - ${Formatters.formatDate(widget.room.currentBookingCheckOut!)}',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
             // Housekeeping Task Info (if available)
             if (widget.room.assignedHousekeeper != null) ...[
               const Text('Housekeeping Task', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),

@@ -5,6 +5,7 @@ class GuestRequest {
   final String? phone;
   final String? nationality;
   final String? idNumber;
+  final int? id;
 
   GuestRequest({
     required this.firstName,
@@ -13,6 +14,7 @@ class GuestRequest {
     this.phone,
     this.nationality,
     this.idNumber,
+    this.id,
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +25,7 @@ class GuestRequest {
       if (phone != null && phone!.isNotEmpty) 'phone': phone,
       if (nationality != null && nationality!.isNotEmpty) 'nationality': nationality,
       if (idNumber != null && idNumber!.isNotEmpty) 'idNumber': idNumber,
+      if (id != null) 'id': id,
     };
   }
 }
@@ -66,6 +69,21 @@ class CreateBookingRequest {
       if (specialRequests != null && specialRequests!.isNotEmpty) 'specialRequests': specialRequests,
     };
   }
+}
+
+class UpdateBookingRequest extends CreateBookingRequest {
+  UpdateBookingRequest({
+    required super.guest,
+    required super.checkIn,
+    required super.checkOut,
+    super.roomTypeId,
+    super.roomId,
+    super.adults = 1,
+    super.children = 0,
+    super.mealPlan = 'room-only',
+    super.source = 'direct',
+    super.specialRequests,
+  });
 }
 
 class PaymentRequest {
