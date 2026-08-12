@@ -6,6 +6,13 @@ import '../models/booking_request_models.dart';
 class BookingsRepository {
   final ApiClient _apiClient;
 
+  static final List<BookingModel> _mockBookings = [
+    BookingModel(id: 1, bookingRef: 'BK-2026-001', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite'),
+    BookingModel(id: 2, bookingRef: 'BK-2026-002', guestId: 2, roomId: 102, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 1, children: 1, mealPlan: 'half_board', totalAmount: 520.0, advancePaid: 200.0, balanceDue: 320.0, status: 'checked_in', source: 'direct', guestFirstName: 'Sarah', guestLastName: 'Smith', roomNumber: '102', roomTypeName: 'Deluxe Suite'),
+    BookingModel(id: 3, bookingRef: 'BK-2026-003', guestId: 3, roomId: 201, roomTypeId: 2, checkIn: DateTime.now().toIso8601String().split('T')[0], checkOut: DateTime.now().add(const Duration(days: 4)).toIso8601String().split('T')[0], nights: 4, adults: 2, children: 1, mealPlan: 'full_board', totalAmount: 900.0, advancePaid: 300.0, balanceDue: 600.0, status: 'confirmed', source: 'direct', guestFirstName: 'Michael', guestLastName: 'Brown', roomNumber: '201', roomTypeName: 'Executive Suite'),
+    BookingModel(id: 4, bookingRef: 'BK-2026-004', guestId: 4, roomId: 103, roomTypeId: 1, checkIn: DateTime.now().subtract(const Duration(days: 3)).toIso8601String().split('T')[0], checkOut: DateTime.now().toIso8601String().split('T')[0], nights: 3, adults: 1, children: 0, mealPlan: 'room_only', totalAmount: 350.0, advancePaid: 350.0, balanceDue: 0.0, status: 'checked_in', source: 'direct', guestFirstName: 'Emma', guestLastName: 'Wilson', roomNumber: '103', roomTypeName: 'Deluxe Suite'),
+  ];
+
   BookingsRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
   Future<List<BookingModel>> getBookings({String? status, String? search}) async {
@@ -22,11 +29,7 @@ class BookingsRepository {
       final list = (response['data'] as List?) ?? [];
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
-      final mock = [
-        BookingModel(id: 1, bookingRef: 'BK-2026-001', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite'),
-        BookingModel(id: 2, bookingRef: 'BK-2026-002', guestId: 2, roomId: 102, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 1, children: 1, mealPlan: 'half_board', totalAmount: 520.0, advancePaid: 200.0, balanceDue: 320.0, status: 'checked_in', source: 'direct', guestFirstName: 'Sarah', guestLastName: 'Smith', roomNumber: '102', roomTypeName: 'Deluxe Suite'),
-      ];
-      var filteredMock = mock;
+      var filteredMock = List<BookingModel>.from(_mockBookings);
       if (status != null && status.isNotEmpty) {
         filteredMock = filteredMock.where((b) => b.status.toLowerCase() == status.toLowerCase()).toList();
       }
@@ -47,7 +50,7 @@ class BookingsRepository {
       final response = await _apiClient.get('${ApiEndpoints.bookings}/$id');
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
+      return _mockBookings.firstWhere((b) => b.id == id, orElse: () => _mockBookings.first);
     }
   }
 
@@ -59,9 +62,9 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(
-        id: 999, 
-        bookingRef: 'BK-2026-999', 
+      final newBooking = BookingModel(
+        id: _mockBookings.length + 1, 
+        bookingRef: 'BK-2026-${_mockBookings.length + 1}', 
         guestId: 999, 
         roomId: data.roomId ?? 0, 
         roomTypeId: data.roomTypeId ?? 1, 
@@ -81,6 +84,8 @@ class BookingsRepository {
         roomNumber: 'TBD', 
         roomTypeName: 'Unknown',
       );
+      _mockBookings.add(newBooking);
+      return newBooking;
     }
   }
 
@@ -92,28 +97,22 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(
-        id: id, 
-        bookingRef: 'BK-2026-00$id', 
-        guestId: data.guest.id ?? 1, 
-        roomId: data.roomId ?? 101, 
-        roomTypeId: data.roomTypeId ?? 1, 
-        checkIn: data.checkIn, 
-        checkOut: data.checkOut, 
-        nights: 3, 
-        adults: data.adults, 
-        children: data.children, 
-        mealPlan: data.mealPlan, 
-        totalAmount: 1000.0, 
-        advancePaid: 0.0, 
-        balanceDue: 1000.0, 
-        status: 'confirmed', 
-        source: 'walk_in', 
-        guestFirstName: data.guest.firstName, 
-        guestLastName: data.guest.lastName, 
-        roomNumber: '101', 
-        roomTypeName: 'Updated Room',
-      );
+      final index = _mockBookings.indexWhere((b) => b.id == id);
+      if (index != -1) {
+        _mockBookings[index] = _mockBookings[index].copyWith(
+          roomId: data.roomId,
+          roomTypeId: data.roomTypeId,
+          checkIn: data.checkIn,
+          checkOut: data.checkOut,
+          adults: data.adults,
+          children: data.children,
+          mealPlan: data.mealPlan,
+          guestFirstName: data.guest.firstName,
+          guestLastName: data.guest.lastName,
+        );
+        return _mockBookings[index];
+      }
+      return _mockBookings.first;
     }
   }
 
@@ -125,7 +124,16 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: 101, roomTypeId: 1, checkIn: '2026-08-04', checkOut: '2026-08-07', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: data.amount, balanceDue: 450.0 - data.amount, status: 'confirmed', source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
+      final index = _mockBookings.indexWhere((b) => b.id == id);
+      if (index != -1) {
+        final existing = _mockBookings[index];
+        _mockBookings[index] = existing.copyWith(
+          advancePaid: existing.advancePaid + data.amount,
+          balanceDue: (existing.balanceDue - data.amount).clamp(0.0, double.infinity),
+        );
+        return _mockBookings[index];
+      }
+      return _mockBookings.first;
     }
   }
 
@@ -135,9 +143,8 @@ class BookingsRepository {
       final list = (response as List?) ?? [];
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
-      return [
-        BookingModel(id: 3, bookingRef: 'BK-2026-003', guestId: 3, roomId: 201, roomTypeId: 2, checkIn: '2026-08-05', checkOut: '2026-08-09', nights: 4, adults: 2, children: 1, mealPlan: 'full_board', totalAmount: 900.0, advancePaid: 300.0, balanceDue: 600.0, status: 'confirmed', source: 'direct', guestFirstName: 'Michael', guestLastName: 'Brown', roomNumber: '201', roomTypeName: 'Executive Suite'),
-      ];
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      return _mockBookings.where((b) => b.checkIn == todayStr && b.status == 'confirmed').toList();
     }
   }
 
@@ -147,9 +154,8 @@ class BookingsRepository {
       final list = (response as List?) ?? [];
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
-      return [
-        BookingModel(id: 4, bookingRef: 'BK-2026-004', guestId: 4, roomId: 103, roomTypeId: 1, checkIn: '2026-08-02', checkOut: '2026-08-05', nights: 3, adults: 1, children: 0, mealPlan: 'room_only', totalAmount: 350.0, advancePaid: 350.0, balanceDue: 0.0, status: 'checked_in', source: 'direct', guestFirstName: 'Emma', guestLastName: 'Wilson', roomNumber: '103', roomTypeName: 'Deluxe Suite'),
-      ];
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      return _mockBookings.where((b) => b.checkOut == todayStr && b.status == 'checked_in').toList();
     }
   }
 
@@ -170,7 +176,16 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
-      return BookingModel(id: id, bookingRef: 'BK-2026-00$id', guestId: 1, roomId: roomId ?? 101, roomTypeId: 1, checkIn: '2026-08-05', checkOut: '2026-08-08', nights: 3, adults: 2, children: 0, mealPlan: 'room_only', totalAmount: 450.0, advancePaid: 150.0, balanceDue: 300.0, status: status, source: 'direct', guestFirstName: 'John', guestLastName: 'Doe', roomNumber: '101', roomTypeName: 'Deluxe Suite');
+      final index = _mockBookings.indexWhere((b) => b.id == id);
+      if (index != -1) {
+        _mockBookings[index] = _mockBookings[index].copyWith(
+          status: status,
+          roomId: roomId ?? _mockBookings[index].roomId,
+          notes: notes ?? _mockBookings[index].notes,
+        );
+        return _mockBookings[index];
+      }
+      return _mockBookings.first;
     }
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/day_out_model.dart';
 import '../../providers/day_out_provider.dart';
 import '../../widgets/loading/loading_indicator.dart';
 import '../../widgets/empty_states/empty_state_view.dart';

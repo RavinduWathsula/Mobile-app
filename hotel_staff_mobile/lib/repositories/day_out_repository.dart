@@ -1,5 +1,4 @@
 import '../models/day_out_model.dart';
-import 'package:flutter/foundation.dart';
 
 class DayOutRepository {
   final List<DayOutPlan> _plans = [

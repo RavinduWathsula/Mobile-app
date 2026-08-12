@@ -44,7 +44,7 @@ router.get('/', requireRole(...roomReaders), async (req: AuthRequest, res: Respo
           roomType: { select: { name: true, basePrice: true, maxOccupancy: true } },
           bookings: {
             where: { status: { in: ['checked_in'] } },
-            select: { id: true, bookingRef: true, checkIn: true, checkOut: true, guest: { select: { fullName: true } } },
+            select: { id: true, bookingRef: true, checkIn: true, checkOut: true, guest: { select: { firstName: true, lastName: true } } },
             take: 1,
           },
           housekeepingTasks: {
@@ -64,7 +64,7 @@ router.get('/', requireRole(...roomReaders), async (req: AuthRequest, res: Respo
       const activeBooking = room.bookings && room.bookings.length > 0 ? room.bookings[0] : null;
       return {
         ...room,
-        currentGuestName: activeBooking?.guest?.fullName || null,
+        currentGuestName: activeBooking?.guest ? `${activeBooking.guest.firstName} ${activeBooking.guest.lastName}` : null,
         currentBookingRef: activeBooking?.bookingRef || null,
         currentBookingCheckIn: activeBooking?.checkIn || null,
         currentBookingCheckOut: activeBooking?.checkOut || null,

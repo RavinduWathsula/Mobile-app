@@ -89,16 +89,16 @@ export function Rooms() {
                     <TableCell>Floor {room.floor}</TableCell>
                     <TableCell>
                       <Badge className={statusColors[room.status] || "bg-gray-100 text-gray-700"}>
-                        {room.status.replace('_', ' ')}
+                        {(room.status || "unknown").replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1 flex-wrap">
-                        {room.features?.map((feature: string) => (
+                        {Array.isArray(room.features) ? room.features.map((feature: string) => (
                           <Badge key={feature} variant="outline" className="text-xs">
                             {feature}
                           </Badge>
-                        ))}
+                        )) : null}
                       </div>
                     </TableCell>
                     <TableCell>

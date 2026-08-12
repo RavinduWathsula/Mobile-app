@@ -111,7 +111,7 @@ class _RecordPaymentSheetState extends ConsumerState<RecordPaymentSheet> {
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder()),
-              value: _paymentMethod,
+              initialValue: _paymentMethod,
               items: const [
                 DropdownMenuItem(value: 'cash', child: Text('Cash')),
                 DropdownMenuItem(value: 'card', child: Text('Card')),

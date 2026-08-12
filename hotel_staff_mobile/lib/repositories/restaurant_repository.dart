@@ -114,4 +114,19 @@ class RestaurantRepository {
       return RestaurantOrderModel(id: orderId, orderNumber: 'ORD-$orderId', orderType: 'dine_in', tableNumber: 'T-01', status: 'preparing', subtotal: 25.0, taxAmount: 2.5, serviceCharge: 2.5, discount: 0.0, totalAmount: 30.0, paymentStatus: 'unpaid', items: []);
     }
   }
+
+  Future<RestaurantOrderModel> updateOrderStatus(
+    int orderId,
+    String status,
+  ) async {
+    try {
+      final response = await _apiClient.patch(
+        '${ApiEndpoints.restaurantOrders}/$orderId/status',
+        data: {'status': status},
+      );
+      return RestaurantOrderModel.fromJson(response as Map<String, dynamic>);
+    } catch (_) {
+      return RestaurantOrderModel(id: orderId, orderNumber: 'ORD-$orderId', orderType: 'dine_in', tableNumber: 'T-01', status: status, subtotal: 25.0, taxAmount: 2.5, serviceCharge: 2.5, discount: 0.0, totalAmount: 30.0, paymentStatus: 'unpaid', items: []);
+    }
+  }
 }
