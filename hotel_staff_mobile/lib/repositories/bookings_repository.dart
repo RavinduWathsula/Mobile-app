@@ -144,7 +144,7 @@ class BookingsRepository {
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
-      return _mockBookings.where((b) => b.checkIn == todayStr && b.status == 'confirmed').toList();
+      return _mockBookings.where((b) => b.checkIn == todayStr && (b.status == 'confirmed' || b.status == 'pending' || b.status == 'checked_in')).toList();
     }
   }
 
@@ -155,7 +155,7 @@ class BookingsRepository {
       return list.map((json) => BookingModel.fromJson(json as Map<String, dynamic>)).toList();
     } catch (_) {
       final todayStr = DateTime.now().toIso8601String().split('T')[0];
-      return _mockBookings.where((b) => b.checkOut == todayStr && b.status == 'checked_in').toList();
+      return _mockBookings.where((b) => b.checkOut == todayStr && (b.status == 'checked_in' || b.status == 'in_house' || b.status == 'checked_out')).toList();
     }
   }
 

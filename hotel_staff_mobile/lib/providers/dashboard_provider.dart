@@ -44,20 +44,14 @@ final dashboardStatsProvider = FutureProvider.autoDispose<DashboardStatsModel>((
       else if (status == 'maintenance') maintenance++;
     }
 
-    int arrivals = 0;
-    int checkouts = 0;
-    double revenue = 0.0;
+    final todayArrivalsList = await bookingsRepo.getTodayArrivals();
+    final todayCheckoutsList = await bookingsRepo.getTodayCheckouts();
     
-    // A simplistic date check for mock data
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    int arrivals = todayArrivalsList.length;
+    int checkouts = todayCheckoutsList.length;
+    double revenue = 0.0;
 
     for (var b in bookings) {
-      if (b.status == 'confirmed' || b.status == 'pending') {
-        arrivals++;
-      }
-      if (b.status == 'in_house') {
-        checkouts++;
-      }
       revenue += b.totalAmount;
     }
 

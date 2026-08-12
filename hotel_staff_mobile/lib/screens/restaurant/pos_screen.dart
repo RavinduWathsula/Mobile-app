@@ -548,7 +548,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                         padding: const EdgeInsets.all(16),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
-                          childAspectRatio: 0.75,
+                          childAspectRatio: 0.55, // Changed to 0.55 to prevent overflow
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
                         ),
@@ -567,7 +567,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                 children: [
                                   // Image Header
                                   Expanded(
-                                    flex: 3,
+                                    flex: 4,
                                     child: Stack(
                                       fit: StackFit.expand,
                                       children: [
@@ -609,37 +609,37 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                   ),
                                   // Details Footer
                                   Expanded(
-                                    flex: 2,
+                                    flex: 3,
                                     child: Padding(
-                                      padding: const EdgeInsets.all(12.0),
+                                      padding: const EdgeInsets.all(10.0),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             item.name, 
-                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, height: 1.2),
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, height: 1.2),
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
+                                              Row(
+                                                children: [
+                                                  if (item.isVegetarian) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.eco, color: Colors.green, size: 14)),
+                                                  if (item.isSpicy) const Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.local_fire_department, color: Colors.red, size: 14)),
+                                                  if (item.preparationTime > 0) ...[
+                                                    Icon(Icons.timer_outlined, color: Colors.grey.shade600, size: 12),
+                                                    const SizedBox(width: 2),
+                                                    Text('${item.preparationTime}m', style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
+                                                  ]
+                                                ],
+                                              ),
+                                              const SizedBox(height: 4),
                                               Text(
                                                 Formatters.formatCurrency(item.price),
                                                 style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 16),
-                                              ),
-                                              Row(
-                                                children: [
-                                                  if (item.isVegetarian) const Icon(Icons.eco, color: Colors.green, size: 16),
-                                                  if (item.isSpicy) const Icon(Icons.local_fire_department, color: Colors.red, size: 16),
-                                                  if (item.preparationTime > 0) ...[
-                                                    const SizedBox(width: 4),
-                                                    Icon(Icons.timer_outlined, color: Colors.grey.shade600, size: 14),
-                                                    const SizedBox(width: 2),
-                                                    Text('${item.preparationTime}m', style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.bold)),
-                                                  ]
-                                                ],
                                               ),
                                             ],
                                           )

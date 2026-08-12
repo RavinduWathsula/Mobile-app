@@ -10,6 +10,8 @@ import '../../utils/currency_formatter.dart';
 import '../../widgets/loading/loading_indicator.dart';
 import '../../widgets/sheets/record_payment_sheet.dart';
 import 'edit_booking_screen.dart';
+import 'check_in_screen.dart';
+import 'check_out_screen.dart';
 
 class BookingDetailScreen extends ConsumerStatefulWidget {
   final int bookingId;
@@ -23,107 +25,24 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
   bool _isProcessing = false;
 
-  Future<void> _handleStatusUpdate(String status, String successMessage) async {
-    setState(() => _isProcessing = true);
-    try {
-      final repo = ref.read(bookingsRepositoryProvider);
-      await repo.updateBookingStatus(widget.bookingId, status);
-      
-      // Refresh all relevant providers
-      ref.invalidate(bookingsListProvider);
+  void _confirmCheckIn(BookingModel booking) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CheckInScreen(booking: booking)),
+    );
+    if (result == true) {
       ref.invalidate(bookingDetailProvider(widget.bookingId));
-      ref.invalidate(todayArrivalsProvider);
-      ref.invalidate(upcomingArrivalsProvider);
-      ref.invalidate(todayCheckoutsProvider);
-      ref.invalidate(roomsListProvider);
-      ref.invalidate(dashboardStatsProvider);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(successMessage), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessing = false);
-      }
     }
   }
 
-  void _confirmCheckIn(BookingModel booking) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Check-In'),
-        content: Text('Check in ${booking.guestFullName} for room ${booking.roomNumber ?? 'TBD'}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _handleStatusUpdate('checked_in', 'Guest checked in successfully.');
-            },
-            child: const Text('CHECK IN'),
-          ),
-        ],
-      ),
+  void _confirmCheckOut(BookingModel booking) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => CheckOutScreen(booking: booking)),
     );
-  }
-
-  void _confirmCheckOut(BookingModel booking) {
-    final hasBalance = booking.balanceDue > 0;
-    
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Check-Out'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Check out ${booking.guestFullName} from room ${booking.roomNumber ?? 'N/A'}?'),
-            if (hasBalance) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.red.withValues(alpha: 0.1),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Outstanding balance: ${CurrencyFormatter.format(booking.balanceDue)}',
-                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('Are you sure you want to proceed without collecting payment?'),
-            ]
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _handleStatusUpdate('checked_out', 'Guest checked out successfully.');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: hasBalance ? Colors.red : Colors.blue, foregroundColor: Colors.white),
-            child: const Text('CHECK OUT'),
-          ),
-        ],
-      ),
-    );
+    if (result == true) {
+      ref.invalidate(bookingDetailProvider(widget.bookingId));
+    }
   }
 
   @override
@@ -141,7 +60,7 @@ class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => EditBookingScreen(booking: bookingAsync.value!)),
-                );
+                ).then((_) => ref.invalidate(bookingDetailProvider(widget.bookingId)));
               },
             ),
         ],

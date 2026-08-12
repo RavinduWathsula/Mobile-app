@@ -5,6 +5,8 @@ import '../../providers/bookings_provider.dart';
 import '../../providers/services_provider.dart';
 import '../../models/booking_request_models.dart';
 import '../../widgets/loading/loading_indicator.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/utils/formatters.dart';
 
 class CreateBookingScreen extends ConsumerStatefulWidget {
   const CreateBookingScreen({super.key});
@@ -17,6 +19,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   int _currentStep = 0;
   final _formKey = GlobalKey<FormState>();
   bool _isSubmitting = false;
+  late PageController _pageController;
 
   // Step 1: Guest Info
   final _firstNameCtrl = TextEditingController();
@@ -44,7 +47,14 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   String _paymentMethod = 'cash';
 
   @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
   void dispose() {
+    _pageController.dispose();
     _firstNameCtrl.dispose();
     _lastNameCtrl.dispose();
     _emailCtrl.dispose();
@@ -54,33 +64,43 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     super.dispose();
   }
 
+  void _nextStep() {
+    if (_currentStep == 0) {
+      if (_firstNameCtrl.text.isEmpty || _lastNameCtrl.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill required guest details')));
+        return;
+      }
+    } else if (_currentStep == 1) {
+      if (_checkIn == null || _checkOut == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select check-in and check-out dates')));
+        return;
+      }
+    } else if (_currentStep == 2) {
+      if (_selectedRoomTypeId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a room type')));
+        return;
+      }
+    }
+
+    if (_currentStep < 5) {
+      setState(() => _currentStep++);
+      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    } else {
+      _submitForm();
+    }
+  }
+
+  void _prevStep() {
+    if (_currentStep > 0) {
+      setState(() => _currentStep--);
+      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   void _submitForm() async {
-    final state = _formKey.currentState;
-    if (state == null || !state.validate()) return;
-    
-    final ci = _checkIn;
-    final co = _checkOut;
-    if (ci == null || co == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select stay dates')),
-      );
-      return;
-    }
-
-    if (co.difference(ci).inDays <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Check-out date must be after check-in date')),
-      );
-      return;
-    }
-
-    if (_selectedRoomTypeId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a room type')),
-      );
-      return;
-    }
-
+    if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
 
     try {
@@ -95,8 +115,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       final dateFormat = DateFormat('yyyy-MM-dd');
       final request = CreateBookingRequest(
         guest: guest,
-        checkIn: dateFormat.format(ci),
-        checkOut: dateFormat.format(co),
+        checkIn: dateFormat.format(_checkIn!),
+        checkOut: dateFormat.format(_checkOut!),
         roomTypeId: _selectedRoomTypeId,
         adults: _adults,
         children: _children,
@@ -122,7 +142,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Booking created successfully!')),
+          const SnackBar(content: Text('Booking created successfully!'), backgroundColor: AppColors.success),
         );
         Navigator.pop(context);
       }
@@ -142,9 +162,18 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       context: context,
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
-      initialDateRange: _checkIn != null && _checkOut != null
-          ? DateTimeRange(start: _checkIn!, end: _checkOut!)
-          : null,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -156,10 +185,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   }
 
   double _calculateTotal(List<Map<String, dynamic>> roomTypes) {
-    final ci = _checkIn;
-    final co = _checkOut;
-    if (ci == null || co == null || _selectedRoomTypeId == null) return 0;
-    final nights = co.difference(ci).inDays;
+    if (_checkIn == null || _checkOut == null || _selectedRoomTypeId == null) return 0;
+    final nights = _checkOut!.difference(_checkIn!).inDays;
     if (nights <= 0) return 0;
     
     final roomType = roomTypes.firstWhere((r) => r['id'] == _selectedRoomTypeId, orElse: () => {});
@@ -182,10 +209,6 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         mealSurcharge = 0;
     }
     
-    if (name.contains('honeymoon') || name.contains('family')) {
-      mealSurcharge = 0;
-    }
-    
     final roomRate = basePrice + mealSurcharge;
     final subtotal = roomRate * nights;
     final taxAmount = subtotal * 0.12;
@@ -193,281 +216,401 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     return subtotal + taxAmount + serviceCharge;
   }
 
+  Widget _buildProgressIndicator() {
+    final steps = ['Guest', 'Dates', 'Room', 'Guests', 'Meal', 'Confirm'];
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(steps.length, (index) {
+          final isPast = index < _currentStep;
+          final isActive = index == _currentStep;
+          return Column(
+            mainAxisSize: MainAxisSize.min, // CRITICAL FIX: prevents infinite height in Row
+            children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isPast || isActive ? Colors.white : Colors.white.withOpacity(0.3),
+                  border: Border.all(color: isActive ? Colors.amber : Colors.transparent, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: isPast 
+                  ? const Icon(Icons.check, color: AppColors.primary, size: 16)
+                  : Text('${index + 1}', style: TextStyle(color: isActive ? AppColors.primary : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+              const SizedBox(height: 4),
+              Text(steps[index], style: TextStyle(color: isActive || isPast ? Colors.white : Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStepCard(String title, Widget child) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 600),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min, // Prevents vertical overflow
+            children: [
+              Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const SizedBox(height: 24),
+              child,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final roomTypesAsync = ref.watch(roomTypesProvider);
+    final isSmallScreen = MediaQuery.of(context).size.width < 400;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('New Booking'),
+        title: const Text('New Reservation', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: _isSubmitting
-          ? const LoadingIndicator(message: 'Creating booking...')
+          ? const LoadingIndicator(message: 'Finalizing reservation...')
           : roomTypesAsync.when(
-              loading: () => const LoadingIndicator(message: 'Loading room types...'),
+              loading: () => const LoadingIndicator(message: 'Loading reservation system...'),
               error: (err, stack) => Center(child: Text('Error: $err')),
               data: (types) {
-                return Form(
-                  key: _formKey,
-                  child: Stepper(
-                    currentStep: _currentStep,
-                    onStepContinue: () {
-                      if (_currentStep < 6) {
-                        setState(() => _currentStep += 1);
-                      } else {
-                        _submitForm();
-                      }
-                    },
-                onStepCancel: () {
-                  if (_currentStep > 0) {
-                    setState(() => _currentStep -= 1);
-                  } else {
-                    Navigator.pop(context);
-                  }
-                },
-                controlsBuilder: (context, details) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 20),
-                    child: Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: details.onStepContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2B0A57),
-                            foregroundColor: Colors.white,
-                          ),
-                          child: Text(_currentStep == 6 ? 'Confirm Booking' : 'Continue'),
-                        ),
-                        const SizedBox(width: 12),
-                        if (_currentStep > 0)
-                          TextButton(
-                            onPressed: details.onStepCancel,
-                            child: const Text('Back'),
-                          ),
-                      ],
-                    ),
-                  );
-                },
-                steps: [
-                  Step(
-                    title: const Text('Guest Info'),
-                    isActive: _currentStep >= 0,
-                    state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: _firstNameCtrl,
-                          decoration: const InputDecoration(labelText: 'First Name *', border: OutlineInputBorder()),
-                          validator: (val) => val == null || val.trim().isEmpty ? 'First name is required' : null,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _lastNameCtrl,
-                          decoration: const InputDecoration(labelText: 'Last Name *', border: OutlineInputBorder()),
-                          validator: (val) => val == null || val.trim().isEmpty ? 'Last name is required' : null,
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _phoneCtrl,
-                          decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder()),
-                          keyboardType: TextInputType.phone,
-                          validator: (val) {
-                            if (val != null && val.trim().isNotEmpty && val.trim().length < 9) {
-                              return 'Enter a valid phone number';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          controller: _emailCtrl,
-                          decoration: const InputDecoration(labelText: 'Email Address', border: OutlineInputBorder()),
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (val) {
-                            if (val != null && val.trim().isNotEmpty && !val.contains('@')) {
-                              return 'Enter a valid email';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Stay Dates'),
-                    isActive: _currentStep >= 1,
-                    state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: _selectDateRange,
-                          icon: const Icon(Icons.calendar_month),
-                          label: Text(_checkIn == null || _checkOut == null 
-                              ? 'Select Check-in & Check-out Dates' 
-                              : '${DateFormat('dd MMM yyyy').format(_checkIn ?? DateTime.now())} - ${DateFormat('dd MMM yyyy').format(_checkOut ?? DateTime.now())}'),
-                        ),
-                        if (_checkIn != null && _checkOut != null)
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              '${_checkOut!.difference(_checkIn!).inDays} Nights',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Room Selection'),
-                    isActive: _currentStep >= 2,
-                    state: _currentStep > 2 ? StepState.complete : StepState.indexed,
-                    content: DropdownButtonFormField<int>(
-                      decoration: const InputDecoration(labelText: 'Room Type *', border: OutlineInputBorder()),
-                      validator: (val) => val == null ? 'Please select a room type' : null,
-                      initialValue: _selectedRoomTypeId,
-                      items: types.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final t = entry.value;
-                        int parsedId = -(index + 1); // fallback to negative index to guarantee uniqueness
-                        if (t['id'] != null) {
-                          parsedId = int.tryParse(t['id'].toString()) ?? parsedId;
-                        }
-                        return DropdownMenuItem<int>(
-                          value: parsedId,
-                          child: Text(t['name']?.toString() ?? 'Unknown Room'),
-                        );
-                      }).toList(),
-                      onChanged: (val) => setState(() => _selectedRoomTypeId = val),
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Rate / Meal Plan'),
-                    isActive: _currentStep >= 3,
-                    state: _currentStep > 3 ? StepState.complete : StepState.indexed,
-                    content: DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(labelText: 'Meal Plan', border: OutlineInputBorder()),
-                      initialValue: _selectedMealPlan,
-                      items: const [
-                        DropdownMenuItem(value: 'room-only', child: Text('Room Only')),
-                        DropdownMenuItem(value: 'bnb', child: Text('Bed & Breakfast (B&B)')),
-                        DropdownMenuItem(value: 'half-board', child: Text('Half Board')),
-                        DropdownMenuItem(value: 'full-board', child: Text('Full Board')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _selectedMealPlan = val);
-                      },
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Guest Count'),
-                    isActive: _currentStep >= 4,
-                    state: _currentStep > 4 ? StepState.complete : StepState.indexed,
-                    content: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                return Column(
+                  children: [
+                    _buildProgressIndicator(),
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          // 0: Guest Info
+                          _buildStepCard('Guest Information', Column(
                             children: [
-                              const Text('Adults'),
                               Row(
                                 children: [
-                                  IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () => setState(() { if (_adults > 1) _adults--; })),
-                                  Text('$_adults', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => setState(() => _adults++)),
+                                  Expanded(child: _buildTextField('First Name *', _firstNameCtrl, Icons.person)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: _buildTextField('Last Name *', _lastNameCtrl, null)),
                                 ],
                               ),
+                              const SizedBox(height: 16),
+                              _buildTextField('Email Address', _emailCtrl, Icons.email, type: TextInputType.emailAddress),
+                              const SizedBox(height: 16),
+                              _buildTextField('Phone Number', _phoneCtrl, Icons.phone, type: TextInputType.phone),
+                              const SizedBox(height: 16),
+                              _buildTextField('ID / Passport Number', _idNumberCtrl, Icons.badge),
                             ],
-                          ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          )),
+
+                          // 1: Dates
+                          _buildStepCard('Stay Duration', Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const Text('Children'),
-                              Row(
-                                children: [
-                                  IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () => setState(() { if (_children > 0) _children--; })),
-                                  Text('$_children', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                  IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => setState(() => _children++)),
+                              InkWell(
+                                onTap: _selectDateRange,
+                                borderRadius: BorderRadius.circular(16),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: AppColors.primary.withOpacity(0.05),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      const Icon(Icons.calendar_month, size: 40, color: AppColors.primary),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _checkIn == null || _checkOut == null 
+                                          ? 'Tap to Select Dates' 
+                                          : '${DateFormat('MMM dd').format(_checkIn!)} → ${DateFormat('MMM dd').format(_checkOut!)}',
+                                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              if (_checkIn != null && _checkOut != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 24),
+                                  child: Wrap(
+                                    alignment: WrapAlignment.center,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                      const Icon(Icons.nightlight_round, color: Colors.indigo),
+                                      const SizedBox(width: 8),
+                                      Text('${_checkOut!.difference(_checkIn!).inDays} Nights Selected', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          )),
+
+                          // 2: Room Type
+                          _buildStepCard('Select Room Type', Column(
+                            children: types.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final t = entry.value;
+                              int parsedId = -(index + 1);
+                              if (t['id'] != null) parsedId = int.tryParse(t['id'].toString()) ?? parsedId;
+                              
+                              final isSelected = _selectedRoomTypeId == parsedId;
+                              
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: InkWell(
+                                  onTap: () => setState(() => _selectedRoomTypeId = parsedId),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: isSelected ? 2 : 1),
+                                      borderRadius: BorderRadius.circular(12),
+                                      color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? AppColors.primary : Colors.grey, size: 20),
+                                              const SizedBox(width: 12),
+                                              Expanded(child: Text(t['name']?.toString() ?? 'Unknown Room', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                                            ],
+                                          ),
+                                        ),
+                                        if (t['basePrice'] != null)
+                                          Text(Formatters.formatCurrency(double.tryParse(t['basePrice'].toString()) ?? 0), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 13)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          )),
+
+                          // 3: Guests
+                          _buildStepCard('Who is staying?', isSmallScreen ? 
+                            Column(
+                              children: [
+                                _buildGuestCounter('Adults', Icons.person, _adults, (val) => setState(() => _adults = val), 1),
+                                const SizedBox(height: 16),
+                                _buildGuestCounter('Children', Icons.child_care, _children, (val) => setState(() => _children = val), 0),
+                              ]
+                            )
+                            : Row(
+                              children: [
+                                Expanded(child: _buildGuestCounter('Adults', Icons.person, _adults, (val) => setState(() => _adults = val), 1)),
+                                const SizedBox(width: 16),
+                                Expanded(child: _buildGuestCounter('Children', Icons.child_care, _children, (val) => setState(() => _children = val), 0)),
+                              ],
+                            )
+                          ),
+
+                          // 4: Meal Plan
+                          _buildStepCard('Meal Plan', Column(
+                            children: [
+                              _buildMealPlanOption('room-only', 'Room Only', 'No meals included'),
+                              _buildMealPlanOption('bnb', 'Bed & Breakfast', 'Breakfast included'),
+                              _buildMealPlanOption('half-board', 'Half Board', 'Breakfast and Dinner included'),
+                              _buildMealPlanOption('full-board', 'Full Board', 'All meals included'),
+                            ],
+                          )),
+
+                          // 5: Summary & Payment
+                          _buildStepCard('Review & Payment', Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    _summaryRow('Guest', '${_firstNameCtrl.text} ${_lastNameCtrl.text}'),
+                                    const Divider(),
+                                    _summaryRow('Dates', _checkIn != null ? '${DateFormat('MMM dd').format(_checkIn!)} - ${DateFormat('MMM dd').format(_checkOut!)}' : ''),
+                                    const Divider(),
+                                    _summaryRow('Total Cost', Formatters.formatCurrency(_calculateTotal(types)), isTotal: true),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+                              const Text('Advance Payment (Optional)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              const SizedBox(height: 16),
+                              _buildTextField('Amount (LKR)', _advanceAmountCtrl, Icons.payments, type: const TextInputType.numberWithOptions(decimal: true)),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                decoration: InputDecoration(
+                                  labelText: 'Payment Method',
+                                  prefixIcon: const Icon(Icons.credit_card),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                                initialValue: _paymentMethod,
+                                items: const [
+                                  DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                                  DropdownMenuItem(value: 'card', child: Text('Card')),
+                                  DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
                                 ],
+                                onChanged: (val) {
+                                  if (val != null) setState(() => _paymentMethod = val);
+                                },
                               ),
                             ],
+                          )),
+                        ],
+                      ),
+                    ),
+                    
+                    // Bottom Navigation
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton.icon(
+                            onPressed: _prevStep,
+                            icon: const Icon(Icons.arrow_back, size: 18),
+                            label: Text(_currentStep == 0 ? 'Cancel' : 'Back', style: const TextStyle(fontSize: 14)),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Step(
-                    title: const Text('Rate Summary'),
-                    isActive: _currentStep >= 5,
-                    state: _currentStep > 5 ? StepState.complete : StepState.indexed,
-                    content: Builder(
-                      builder: (context) {
-                        final ci = _checkIn;
-                        final co = _checkOut;
-                        final nights = ci != null && co != null ? co.difference(ci).inDays : 0;
-                        final total = _calculateTotal(types);
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              title: const Text('Nights'),
-                              trailing: Text('$nights'),
+                          ElevatedButton(
+                            onPressed: _nextStep,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            ListTile(
-                              title: const Text('Total Estimated Amount'),
-                              trailing: Text('LKR ${total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_currentStep == 5 ? 'CONFIRM' : 'NEXT', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
+                                if (_currentStep < 5) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.arrow_forward, size: 16)),
+                              ],
                             ),
-                          ],
-                        );
-                      }
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Step(
-                    title: const Text('Payment (Optional)'),
-                    isActive: _currentStep >= 6,
-                    state: StepState.indexed,
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextFormField(
-                          controller: _advanceAmountCtrl,
-                          decoration: const InputDecoration(labelText: 'Advance Payment (LKR)', border: OutlineInputBorder(), prefixText: 'LKR '),
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (val) {
-                            if (val != null && val.trim().isNotEmpty && double.tryParse(val) == null) {
-                              return 'Enter a valid amount';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          decoration: const InputDecoration(labelText: 'Payment Method', border: OutlineInputBorder()),
-                          initialValue: _paymentMethod,
-                          items: const [
-                            DropdownMenuItem(value: 'cash', child: Text('Cash')),
-                            DropdownMenuItem(value: 'card', child: Text('Card')),
-                            DropdownMenuItem(value: 'bank_transfer', child: Text('Bank Transfer')),
-                          ],
-                          onChanged: (val) {
-                          if (val != null) setState(() => _paymentMethod = val);
-                        },
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
+                );
+              },
+            ),
+    );
+  }
+
+  Widget _buildGuestCounter(String label, IconData icon, int value, Function(int) onChanged, int min) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        children: [
+          Icon(icon, size: 32, color: Colors.grey),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () { if (value > min) onChanged(value - 1); }),
+              Text('$value', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => onChanged(value + 1)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, TextEditingController controller, IconData? icon, {TextInputType type = TextInputType.text}) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: type,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: icon != null ? Icon(icon, color: Colors.grey) : null,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+        filled: true,
+        fillColor: Colors.grey.shade50,
+      ),
+    );
+  }
+
+  Widget _buildMealPlanOption(String value, String title, String subtitle) {
+    final isSelected = _selectedMealPlan == value;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: () => setState(() => _selectedMealPlan = value),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: isSelected ? 2 : 1),
+            borderRadius: BorderRadius.circular(12),
+            color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+          ),
+          child: Row(
+            children: [
+              Icon(isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked, color: isSelected ? AppColors.primary : Colors.grey),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 ],
               ),
-            );
-          },
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade700, fontSize: isTotal ? 18 : 16)),
+          Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isTotal ? AppColors.primary : Colors.black87, fontSize: isTotal ? 24 : 16)),
+        ],
+      ),
     );
   }
 }
