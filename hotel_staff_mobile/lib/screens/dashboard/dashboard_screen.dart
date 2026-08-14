@@ -10,6 +10,7 @@ import '../../widgets/dashboard/shift_announcement_card.dart';
 import '../../widgets/dashboard/notification_badge.dart';
 import '../../widgets/loading/dashboard_skeleton.dart';
 import '../../widgets/empty_states/empty_state_view.dart';
+import '../../widgets/common/drawer_navigation.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -39,6 +40,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      drawer: const DrawerNavigation(),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -79,6 +81,14 @@ class DashboardScreen extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      Builder(
+                        builder: (ctx) => IconButton(
+                          padding: const EdgeInsets.only(right: 12),
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(Icons.menu, color: AppColors.textPrimary, size: 28),
+                          onPressed: () => Scaffold.of(ctx).openDrawer(),
+                        ),
+                      ),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

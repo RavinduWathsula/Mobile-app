@@ -17,6 +17,7 @@ class RoomModel {
   final String? currentBookingRef;
   final DateTime? currentBookingCheckIn;
   final DateTime? currentBookingCheckOut;
+  final double? currentBookingTotalAmount;
 
   RoomModel({
     required this.id,
@@ -35,6 +36,7 @@ class RoomModel {
     this.currentBookingRef,
     this.currentBookingCheckIn,
     this.currentBookingCheckOut,
+    this.currentBookingTotalAmount,
   });
 
   factory RoomModel.fromJson(Map<String, dynamic> json) {
@@ -66,6 +68,7 @@ class RoomModel {
       currentBookingRef: json['currentBookingRef']?.toString(),
       currentBookingCheckIn: json['currentBookingCheckIn'] != null ? DateTime.tryParse(json['currentBookingCheckIn'].toString()) : null,
       currentBookingCheckOut: json['currentBookingCheckOut'] != null ? DateTime.tryParse(json['currentBookingCheckOut'].toString()) : null,
+      currentBookingTotalAmount: json['currentBookingTotalAmount'] != null ? double.tryParse(json['currentBookingTotalAmount'].toString()) : null,
     );
   }
 
@@ -107,6 +110,7 @@ class RoomModel {
     String? currentBookingRef,
     DateTime? currentBookingCheckIn,
     DateTime? currentBookingCheckOut,
+    double? currentBookingTotalAmount,
   }) {
     return RoomModel(
       id: id ?? this.id,
@@ -125,6 +129,7 @@ class RoomModel {
       currentBookingRef: currentBookingRef ?? this.currentBookingRef,
       currentBookingCheckIn: currentBookingCheckIn ?? this.currentBookingCheckIn,
       currentBookingCheckOut: currentBookingCheckOut ?? this.currentBookingCheckOut,
+      currentBookingTotalAmount: currentBookingTotalAmount ?? this.currentBookingTotalAmount,
     );
   }
 }

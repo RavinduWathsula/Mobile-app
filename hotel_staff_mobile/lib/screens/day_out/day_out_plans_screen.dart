@@ -333,7 +333,7 @@ class _DayOutPlansScreenState extends ConsumerState<DayOutPlansScreen> with Sing
                           const SizedBox(height: 6),
                           Text(
                             booking.planName,
-                            style: TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w600),
+                            style: const TextStyle(fontSize: 14, color: AppColors.primary, fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(height: 12),
                           Row(

@@ -95,19 +95,32 @@ class HousekeepingScreen extends ConsumerWidget {
                       final filter = filters[index];
                       final isSelected = currentFilter == filter;
                       
-                      return ChoiceChip(
-                        label: Text(filter),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary,
-                        labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : AppColors.textPrimary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                        ),
-                        onSelected: (selected) {
-                          if (selected) {
-                            ref.read(housekeepingFilterStatusProvider.notifier).state = filter;
-                          }
-                        },
+                      return Builder(
+                        builder: (chipContext) {
+                          return ChoiceChip(
+                            label: Text(filter),
+                            selected: isSelected,
+                            selectedColor: AppColors.primary,
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : AppColors.textPrimary,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                            onSelected: (selected) {
+                              if (selected) {
+                                ref.read(housekeepingFilterStatusProvider.notifier).state = filter;
+                                Future.delayed(const Duration(milliseconds: 100), () {
+                                  if (chipContext.mounted) {
+                                    Scrollable.ensureVisible(
+                                      chipContext,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  }
+                                });
+                              }
+                            },
+                          );
+                        }
                       );
                     },
                   ),

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../models/dashboard_stats_model.dart';
 import 'services_provider.dart';
 
@@ -38,8 +37,9 @@ final dashboardStatsProvider = FutureProvider.autoDispose<DashboardStatsModel>((
 
     for (var room in rooms) {
       final status = room.status.toLowerCase();
-      if (status == 'occupied') occupied++;
-      else if (status == 'available') available++;
+      if (status == 'occupied') {
+        occupied++;
+      } else if (status == 'available') available++;
       else if (status == 'cleaning' || status == 'dirty') dirty++;
       else if (status == 'maintenance') maintenance++;
     }

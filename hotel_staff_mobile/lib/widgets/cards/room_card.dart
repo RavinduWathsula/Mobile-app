@@ -99,34 +99,56 @@ class RoomCard extends StatelessWidget {
                 ),
 
                 // Active Guest or Housekeeping Preview Tags
-                if (room.currentGuestName != null || room.assignedHousekeeper != null) ...[
+                if (room.currentGuestName != null || room.assignedHousekeeper != null || room.currentBookingTotalAmount != null) ...[
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (room.currentGuestName != null) ...[
-                        const Icon(Icons.person_outline, size: 14, color: AppColors.primary),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Guest: ${room.currentGuestName}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                      if (room.assignedHousekeeper != null) ...[
-                        const Icon(Icons.cleaning_services_outlined, size: 14, color: Color(0xFFF59E0B)),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Cleaner: ${room.assignedHousekeeper}',
-                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                      Row(
+                        children: [
+                          if (room.currentGuestName != null) ...[
+                            const Icon(Icons.person_outline, size: 14, color: AppColors.primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Guest: ${room.currentGuestName}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                          if (room.assignedHousekeeper != null) ...[
+                            const Icon(Icons.cleaning_services_outlined, size: 14, color: Color(0xFFF59E0B)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Cleaner: ${room.assignedHousekeeper}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (room.currentBookingTotalAmount != null) ...[
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(Icons.payments_outlined, size: 14, color: Colors.green),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Booking Total: ${Formatters.formatCurrency(room.currentBookingTotalAmount!)}',
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],

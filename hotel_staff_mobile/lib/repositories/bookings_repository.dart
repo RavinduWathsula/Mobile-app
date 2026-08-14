@@ -2,6 +2,7 @@ import '../core/network/api_client.dart';
 import '../core/constants/api_endpoints.dart';
 import '../models/booking_model.dart';
 import '../models/booking_request_models.dart';
+import 'rooms_repository.dart';
 
 class BookingsRepository {
   final ApiClient _apiClient;
@@ -62,11 +63,21 @@ class BookingsRepository {
       );
       return BookingModel.fromJson(response as Map<String, dynamic>);
     } catch (_) {
+      final bookingRef = 'BK-2026-${_mockBookings.length + 1}';
+      final guestName = '${data.guest.firstName} ${data.guest.lastName}';
+      
+      final assignedRoom = RoomsRepository.assignAvailableRoom(
+        data.roomTypeId ?? 1, 
+        guestName, 
+        bookingRef,
+        data.totalAmount ?? 1000.0,
+      );
+
       final newBooking = BookingModel(
         id: _mockBookings.length + 1, 
-        bookingRef: 'BK-2026-${_mockBookings.length + 1}', 
+        bookingRef: bookingRef, 
         guestId: 999, 
-        roomId: data.roomId ?? 0, 
+        roomId: assignedRoom?.id ?? data.roomId ?? 0, 
         roomTypeId: data.roomTypeId ?? 1, 
         checkIn: data.checkIn, 
         checkOut: data.checkOut, 
@@ -74,15 +85,15 @@ class BookingsRepository {
         adults: data.adults, 
         children: data.children, 
         mealPlan: data.mealPlan, 
-        totalAmount: 1000.0, 
+        totalAmount: data.totalAmount ?? 1000.0, 
         advancePaid: 0.0, 
-        balanceDue: 1000.0, 
+        balanceDue: data.totalAmount ?? 1000.0, 
         status: 'confirmed', 
         source: 'walk_in', 
         guestFirstName: data.guest.firstName, 
         guestLastName: data.guest.lastName, 
-        roomNumber: 'TBD', 
-        roomTypeName: 'Unknown',
+        roomNumber: assignedRoom?.roomNumber ?? 'TBD', 
+        roomTypeName: assignedRoom?.roomTypeName ?? 'Unknown',
       );
       _mockBookings.add(newBooking);
       return newBooking;

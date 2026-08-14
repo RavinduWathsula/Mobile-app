@@ -85,13 +85,13 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                       ),
                       child: Row(
                         children: [
                           Container(
                             width: 64, height: 64,
-                            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
                             child: const Icon(Icons.person, color: AppColors.primary, size: 32),
                           ),
                           const SizedBox(width: 16),
@@ -114,7 +114,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                       child: Column(
                         children: [
                           _buildDetailRow(Icons.king_bed, 'Room', widget.booking.roomNumber ?? 'Not Assigned (Will auto-assign)'),
@@ -134,7 +134,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                       child: Column(
                         children: [
                           CheckboxListTile(
@@ -160,7 +160,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     // Key Cards
                     Container(
                       padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -168,7 +168,7 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                                decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                                 child: const Icon(Icons.key, color: Colors.blue),
                               ),
                               const SizedBox(width: 16),

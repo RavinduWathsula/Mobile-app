@@ -41,6 +41,7 @@ class CreateBookingRequest {
   final String mealPlan;
   final String source;
   final String? specialRequests;
+  final double? totalAmount;
 
   CreateBookingRequest({
     required this.guest,
@@ -53,6 +54,7 @@ class CreateBookingRequest {
     this.mealPlan = 'room-only',
     this.source = 'direct',
     this.specialRequests,
+    this.totalAmount,
   });
 
   Map<String, dynamic> toJson() {
@@ -67,6 +69,7 @@ class CreateBookingRequest {
       'mealPlan': mealPlan,
       'source': source,
       if (specialRequests != null && specialRequests!.isNotEmpty) 'specialRequests': specialRequests,
+      if (totalAmount != null) 'totalAmount': totalAmount,
     };
   }
 }

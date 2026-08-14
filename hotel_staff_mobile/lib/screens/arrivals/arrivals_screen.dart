@@ -8,6 +8,7 @@ import '../../widgets/loading/loading_indicator.dart';
 import '../../widgets/empty_states/empty_state_view.dart';
 import '../bookings/booking_detail_screen.dart';
 import '../../models/booking_model.dart';
+import '../../core/theme/app_colors.dart';
 
 final arrivalsSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
 final arrivalsPaymentFilterProvider = StateProvider.autoDispose<String>((ref) => 'All');
@@ -66,23 +67,77 @@ class ArrivalsScreen extends ConsumerWidget {
                 final currentFilter = ref.watch(arrivalsPaymentFilterProvider);
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      const Text('Payment: '),
+                      const Text('Payment: ', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.textSecondary)),
                       const SizedBox(width: 8),
-                      FilterChip(
-                        label: const Text('All'),
-                        selected: currentFilter == 'All',
-                        onSelected: (_) => ref.read(arrivalsPaymentFilterProvider.notifier).state = 'All',
+                      Builder(
+                        builder: (itemContext) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('All'),
+                            selected: currentFilter == 'All',
+                            selectedColor: AppColors.primary,
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: currentFilter == 'All' ? Colors.white : AppColors.textPrimary,
+                              fontWeight: currentFilter == 'All' ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                            backgroundColor: Colors.grey.shade100,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: currentFilter == 'All' ? AppColors.primary : Colors.grey.shade300,
+                              ),
+                            ),
+                            onSelected: (_) {
+                              ref.read(arrivalsPaymentFilterProvider.notifier).state = 'All';
+                              Scrollable.ensureVisible(
+                                itemContext,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 8),
-                      FilterChip(
-                        label: const Text('Unpaid Only'),
-                        selected: currentFilter == 'Unpaid',
-                        onSelected: (_) => ref.read(arrivalsPaymentFilterProvider.notifier).state = 'Unpaid',
+                      Builder(
+                        builder: (itemContext) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('Unpaid Only'),
+                            selected: currentFilter == 'Unpaid',
+                            selectedColor: AppColors.primary,
+                            checkmarkColor: Colors.white,
+                            labelStyle: TextStyle(
+                              color: currentFilter == 'Unpaid' ? Colors.white : AppColors.textPrimary,
+                              fontWeight: currentFilter == 'Unpaid' ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                            backgroundColor: Colors.grey.shade100,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: currentFilter == 'Unpaid' ? AppColors.primary : Colors.grey.shade300,
+                              ),
+                            ),
+                            onSelected: (_) {
+                              ref.read(arrivalsPaymentFilterProvider.notifier).state = 'Unpaid';
+                              Scrollable.ensureVisible(
+                                itemContext,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                ),
                 );
               }
             ),

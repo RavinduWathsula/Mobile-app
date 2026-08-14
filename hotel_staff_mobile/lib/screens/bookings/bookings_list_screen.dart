@@ -51,7 +51,8 @@ class BookingsListScreen extends ConsumerWidget {
               pinned: true,
               elevation: 0,
               flexibleSpace: FlexibleSpaceBar(
-                titlePadding: const EdgeInsets.only(left: 48, bottom: 16), // Adjusted for drawer icon
+                titlePadding: const EdgeInsets.only(
+                    left: 48, bottom: 16), // Adjusted for drawer icon
                 title: Text(
                   'Bookings',
                   style: theme.textTheme.titleLarge?.copyWith(
@@ -74,7 +75,8 @@ class BookingsListScreen extends ConsumerWidget {
                     hintText: 'Search by booking ref or guest name...',
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
-                    fillColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.3),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -134,7 +136,8 @@ class BookingsListScreen extends ConsumerWidget {
                     child: EmptyStateView(
                       icon: Icons.bookmark_border,
                       title: 'No Bookings Found',
-                      description: 'No active or upcoming reservations match your query.',
+                      description:
+                          'No active or upcoming reservations match your query.',
                     ),
                   );
                 }
@@ -144,13 +147,15 @@ class BookingsListScreen extends ConsumerWidget {
                     (context, index) {
                       final booking = bookings[index];
                       return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 6),
                         child: BookingCard(
                           booking: booking,
                           onTap: () {
                             Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
-                                builder: (_) => BookingDetailScreen(bookingId: booking.id),
+                                builder: (_) =>
+                                    BookingDetailScreen(bookingId: booking.id),
                               ),
                             );
                           },

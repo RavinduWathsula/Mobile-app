@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/bookings_provider.dart';
-import '../../providers/services_provider.dart';
-import '../../providers/rooms_provider.dart';
-import '../../providers/dashboard_provider.dart';
 import '../../models/booking_model.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/loading/loading_indicator.dart';
@@ -23,7 +20,7 @@ class BookingDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingDetailScreenState extends ConsumerState<BookingDetailScreen> {
-  bool _isProcessing = false;
+  final bool _isProcessing = false;
 
   void _confirmCheckIn(BookingModel booking) async {
     final result = await Navigator.push(

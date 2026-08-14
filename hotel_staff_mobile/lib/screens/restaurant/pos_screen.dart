@@ -226,7 +226,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.grey.shade200),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
                               ),
                               child: Row(
                                 children: [
@@ -482,7 +482,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))],
                   ),
                   child: Column(
                     children: [
@@ -547,7 +547,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                       return GridView.builder(
                         padding: const EdgeInsets.all(16),
                         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : (MediaQuery.of(context).size.width > 500 ? 3 : 2),
+                          crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : 2,
                           childAspectRatio: 0.55, // Changed to 0.55 to prevent overflow
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
@@ -557,7 +557,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                           final item = items[index];
                           return Card(
                             elevation: 4,
-                            shadowColor: Colors.black.withOpacity(0.2),
+                            shadowColor: Colors.black.withValues(alpha: 0.2),
                             clipBehavior: Clip.antiAlias,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: InkWell(
@@ -599,7 +599,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                             decoration: BoxDecoration(
                                               color: AppColors.primary,
                                               shape: BoxShape.circle,
-                                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))],
+                                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2))],
                                             ),
                                             child: const Icon(Icons.add, color: Colors.white, size: 20),
                                           ),
@@ -682,7 +682,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                     final isOccupied = table.status == 'occupied';
                     return Card(
                       elevation: isOccupied ? 6 : 2,
-                      shadowColor: isOccupied ? AppColors.primary.withOpacity(0.4) : Colors.black12,
+                      shadowColor: isOccupied ? AppColors.primary.withValues(alpha: 0.4) : Colors.black12,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(color: isOccupied ? AppColors.primary : Colors.transparent, width: 2),
@@ -698,7 +698,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: isOccupied ? LinearGradient(
-                              colors: [Colors.white, AppColors.primary.withOpacity(0.05)],
+                              colors: [Colors.white, AppColors.primary.withValues(alpha: 0.05)],
                               begin: Alignment.topLeft, end: Alignment.bottomRight,
                             ) : null,
                           ),
@@ -796,7 +796,7 @@ class _POSScreenState extends ConsumerState<POSScreen> {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
                                       child: const Icon(Icons.receipt, color: AppColors.primary),
                                     ),
                                     const SizedBox(width: 12),

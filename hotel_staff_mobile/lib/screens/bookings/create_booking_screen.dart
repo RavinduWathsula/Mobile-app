@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/services_provider.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../providers/rooms_provider.dart';
 import '../../models/booking_request_models.dart';
 import '../../widgets/loading/loading_indicator.dart';
 import '../../core/theme/app_colors.dart';
@@ -70,6 +72,24 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill required guest details')));
         return;
       }
+      
+      final emailText = _emailCtrl.text.trim();
+      if (emailText.isNotEmpty && !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(emailText)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid email address')));
+        return;
+      }
+      
+      final phoneText = _phoneCtrl.text.trim();
+      if (phoneText.isNotEmpty && !RegExp(r'^\d{10}$').hasMatch(phoneText)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Phone number must be exactly 10 digits')));
+        return;
+      }
+      
+      final idText = _idNumberCtrl.text.trim();
+      if (idText.isNotEmpty && !RegExp(r'^\d+$').hasMatch(idText)) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ID / Passport must contain only numbers')));
+        return;
+      }
     } else if (_currentStep == 1) {
       if (_checkIn == null || _checkOut == null) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select check-in and check-out dates')));
@@ -113,6 +133,34 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       );
 
       final dateFormat = DateFormat('yyyy-MM-dd');
+      final roomTypes = ref.read(roomTypesProvider).value ?? [];
+      final totalAmount = _calculateTotal(roomTypes);
+
+      final advanceStr = _advanceAmountCtrl.text.trim();
+      double advance = 0.0;
+      if (advanceStr.isNotEmpty) {
+        if (!RegExp(r'^\d+(\.\d+)?$').hasMatch(advanceStr)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Advance payment must contain only numbers.'), backgroundColor: Colors.red),
+            );
+            setState(() => _isSubmitting = false);
+          }
+          return;
+        }
+
+        advance = double.tryParse(advanceStr) ?? 0;
+        if (advance > totalAmount) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Advance payment cannot exceed the total amount.'), backgroundColor: Colors.red),
+            );
+            setState(() => _isSubmitting = false);
+          }
+          return;
+        }
+      }
+      
       final request = CreateBookingRequest(
         guest: guest,
         checkIn: dateFormat.format(_checkIn!),
@@ -122,23 +170,24 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
         children: _children,
         mealPlan: _selectedMealPlan,
         source: 'walk_in',
+        totalAmount: totalAmount,
       );
 
       final repo = ref.read(bookingsRepositoryProvider);
       final newBooking = await repo.createBooking(request);
 
-      final advanceStr = _advanceAmountCtrl.text.trim();
-      if (advanceStr.isNotEmpty) {
-        final advance = double.tryParse(advanceStr) ?? 0;
-        if (advance > 0) {
-          await repo.recordPayment(
-            newBooking.id,
-            PaymentRequest(amount: advance, paymentMethod: _paymentMethod),
-          );
-        }
+      if (advance > 0) {
+        await repo.recordPayment(
+          newBooking.id,
+          PaymentRequest(amount: advance, paymentMethod: _paymentMethod),
+        );
       }
 
       ref.invalidate(bookingsListProvider);
+      ref.invalidate(dashboardStatsProvider);
+      ref.invalidate(recentActivityProvider);
+      ref.invalidate(todayArrivalsProvider);
+      ref.invalidate(roomsListProvider);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -222,7 +271,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
         color: AppColors.primary,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -236,7 +285,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                 width: 28, height: 28,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isPast || isActive ? Colors.white : Colors.white.withOpacity(0.3),
+                  color: isPast || isActive ? Colors.white : Colors.white.withValues(alpha: 0.3),
                   border: Border.all(color: isActive ? Colors.amber : Colors.transparent, width: 2),
                 ),
                 alignment: Alignment.center,
@@ -264,7 +313,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, 10))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,6 +358,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                         children: [
                           // 0: Guest Info
                           _buildStepCard('Guest Information', Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Row(
                                 children: [
@@ -329,6 +379,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           // 1: Dates
                           _buildStepCard('Stay Duration', Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               InkWell(
                                 onTap: _selectDateRange,
@@ -336,9 +387,9 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
                                     borderRadius: BorderRadius.circular(16),
-                                    color: AppColors.primary.withOpacity(0.05),
+                                    color: AppColors.primary.withValues(alpha: 0.05),
                                   ),
                                   child: Column(
                                     children: [
@@ -372,6 +423,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
                           // 2: Room Type
                           _buildStepCard('Select Room Type', Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: types.asMap().entries.map((entry) {
                               final index = entry.key;
                               final t = entry.value;
@@ -390,7 +442,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                                     decoration: BoxDecoration(
                                       border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: isSelected ? 2 : 1),
                                       borderRadius: BorderRadius.circular(12),
-                                      color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+                                      color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -417,6 +469,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           // 3: Guests
                           _buildStepCard('Who is staying?', isSmallScreen ? 
                             Column(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 _buildGuestCounter('Adults', Icons.person, _adults, (val) => setState(() => _adults = val), 1),
                                 const SizedBox(height: 16),
@@ -434,6 +487,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
                           // 4: Meal Plan
                           _buildStepCard('Meal Plan', Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               _buildMealPlanOption('room-only', 'Room Only', 'No meals included'),
                               _buildMealPlanOption('bnb', 'Bed & Breakfast', 'Breakfast included'),
@@ -444,13 +498,14 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
 
                           // 5: Summary & Payment
                           _buildStepCard('Review & Payment', Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.05),
+                                  color: AppColors.primary.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                                 ),
                                 child: Column(
                                   children: [
@@ -494,7 +549,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -5))],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -507,6 +562,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           ElevatedButton(
                             onPressed: _nextStep,
                             style: ElevatedButton.styleFrom(
+                              minimumSize: Size.zero, // Override global infinite width
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
@@ -581,7 +637,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
           decoration: BoxDecoration(
             border: Border.all(color: isSelected ? AppColors.primary : Colors.grey.shade300, width: isSelected ? 2 : 1),
             borderRadius: BorderRadius.circular(12),
-            color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+            color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
           ),
           child: Row(
             children: [

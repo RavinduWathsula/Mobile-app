@@ -244,10 +244,10 @@ class KdsOrderCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDelayed ? Colors.orange.withOpacity(0.5) : Colors.white10, width: 2),
+        border: Border.all(color: isDelayed ? Colors.orange.withValues(alpha: 0.5) : Colors.white10, width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -292,15 +292,15 @@ class KdsOrderCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.5)),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.5)),
                   ),
                   child: Column(
                     children: [
                       Text(
                         order.tableNumber != null ? 'TABLE' : (order.roomNumber != null ? 'ROOM' : 'ORDER'),
-                        style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
+                        style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
                       ),
                       Text(
                         order.tableNumber ?? order.roomNumber ?? '-',
@@ -397,9 +397,9 @@ class KdsOrderCard extends ConsumerWidget {
                               margin: const EdgeInsets.only(top: 8),
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.15),
+                                color: Colors.red.withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,

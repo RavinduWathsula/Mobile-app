@@ -102,39 +102,47 @@ class _RoomsListScreenState extends ConsumerState<RoomsListScreen> {
                   const SizedBox(height: 10),
 
                   // Horizontal Filter Chips List
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _filterChips.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final chip = _filterChips[index];
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _filterChips.map((chip) {
                         final isSelected = selectedFilterStatus == chip['status'];
 
-                        return FilterChip(
-                          label: Text(chip['label']!),
-                          selected: isSelected,
-                          selectedColor: AppColors.primary,
-                          checkmarkColor: Colors.white,
-                          labelStyle: TextStyle(
-                            color: isSelected ? Colors.white : AppColors.textPrimary,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                          backgroundColor: Colors.grey.shade100,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(
-                              color: isSelected ? AppColors.primary : Colors.grey.shade300,
-                            ),
-                          ),
-                          onSelected: (selected) {
-                            ref.read(roomFilterStatusProvider.notifier).state =
-                                isSelected ? null : chip['status'];
+                        return Builder(
+                          builder: (itemContext) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(chip['label']!),
+                                selected: isSelected,
+                                selectedColor: AppColors.primary,
+                                checkmarkColor: Colors.white,
+                                labelStyle: TextStyle(
+                                  color: isSelected ? Colors.white : AppColors.textPrimary,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  fontSize: 12,
+                                ),
+                                backgroundColor: Colors.grey.shade100,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  side: BorderSide(
+                                    color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                                  ),
+                                ),
+                                onSelected: (selected) {
+                                  ref.read(roomFilterStatusProvider.notifier).state =
+                                      isSelected ? null : chip['status'];
+                                  Scrollable.ensureVisible(
+                                    itemContext,
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  );
+                                },
+                              ),
+                            );
                           },
                         );
-                      },
+                      }).toList(),
                     ),
                   ),
                 ],

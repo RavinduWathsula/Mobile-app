@@ -119,13 +119,13 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                       ),
                       child: Row(
                         children: [
                           Container(
                             width: 64, height: 64,
-                            decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
                             child: Icon(Icons.logout, color: Colors.blue.shade700, size: 32),
                           ),
                           const SizedBox(width: 16),
@@ -151,7 +151,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+                        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
                         border: hasBalance ? Border.all(color: Colors.red.shade200, width: 2) : Border.all(color: Colors.green.shade200, width: 2),
                       ),
                       child: Column(
@@ -197,7 +197,7 @@ class _CheckOutScreenState extends ConsumerState<CheckOutScreen> {
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)]),
                       child: Column(
                         children: [
                           CheckboxListTile(

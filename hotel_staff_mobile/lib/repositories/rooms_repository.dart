@@ -1,4 +1,3 @@
-import 'dart:io';
 import '../core/network/api_client.dart';
 import '../core/constants/api_endpoints.dart';
 import '../models/room_model.dart';
@@ -12,7 +11,29 @@ class RoomsRepository {
     RoomModel(id: 3, roomNumber: '201', roomTypeId: 2, floor: 2, status: 'dirty', features: ['WiFi', 'AC', 'TV', 'Mini Bar'], roomTypeName: 'Executive Suite', basePrice: 25000.0, maxOccupancy: 3, assignedHousekeeper: 'Jane Doe', housekeepingTaskStatus: 'pending'),
     RoomModel(id: 4, roomNumber: '103', roomTypeId: 1, floor: 1, status: 'maintenance', features: ['WiFi', 'AC'], roomTypeName: 'Deluxe Suite', basePrice: 15000.0, maxOccupancy: 2, notes: 'AC not working'),
     RoomModel(id: 5, roomNumber: '301', roomTypeId: 3, floor: 3, status: 'available', features: ['WiFi'], roomTypeName: 'Standard Room', basePrice: 10000.0, maxOccupancy: 2),
+    RoomModel(id: 6, roomNumber: '302', roomTypeId: 3, floor: 3, status: 'available', features: ['WiFi', 'TV'], roomTypeName: 'Standard Room', basePrice: 10000.0, maxOccupancy: 2),
+    RoomModel(id: 7, roomNumber: '202', roomTypeId: 2, floor: 2, status: 'available', features: ['WiFi', 'AC', 'TV', 'Mini Bar'], roomTypeName: 'Executive Suite', basePrice: 25000.0, maxOccupancy: 3),
+    RoomModel(id: 8, roomNumber: '104', roomTypeId: 1, floor: 1, status: 'available', features: ['WiFi', 'AC', 'TV'], roomTypeName: 'Deluxe Suite', basePrice: 15000.0, maxOccupancy: 2),
+    RoomModel(id: 9, roomNumber: '303', roomTypeId: 3, floor: 3, status: 'available', features: ['WiFi'], roomTypeName: 'Standard Room', basePrice: 10000.0, maxOccupancy: 2),
+    RoomModel(id: 10, roomNumber: '203', roomTypeId: 2, floor: 2, status: 'available', features: ['WiFi', 'AC', 'TV'], roomTypeName: 'Executive Suite', basePrice: 25000.0, maxOccupancy: 3),
   ];
+  static RoomModel? assignAvailableRoom(int roomTypeId, String guestName, String bookingRef, double totalAmount) {
+    int index = _mockRooms.indexWhere((r) => r.roomTypeId == roomTypeId && r.status == 'available');
+    if (index == -1) {
+      index = _mockRooms.indexWhere((r) => r.status == 'available');
+    }
+    
+    if (index != -1) {
+      _mockRooms[index] = _mockRooms[index].copyWith(
+        status: 'occupied',
+        currentGuestName: guestName,
+        currentBookingRef: bookingRef,
+        currentBookingTotalAmount: totalAmount,
+      );
+      return _mockRooms[index];
+    }
+    return null;
+  }
 
   RoomsRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
